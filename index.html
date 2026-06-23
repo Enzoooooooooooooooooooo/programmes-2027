@@ -1,0 +1,741 @@
+<!--
+  CHOISIR LIBREMENT — Comparateur neutre de programmes politiques
+  ───────────────────────────────────────────────────────────────────────────
+  Tu ne modifies que :  config.js  et  Comparaison_programmes.xlsx
+  (ce fichier index.html contient l'application ; pas besoin d'y toucher).
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Programmes 2027 — Voter librement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Spectral:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600;1,700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- TES DONNÉES ÉDITABLES : -->
+<script src="config.js"></script>
+
+<style>
+  :root{
+    --bg:#0E1115; --bg-2:#141922; --surface:#1A212B; --surface-2:#232C38;
+    --ink:#ECE8DC; --muted:#9AA1AA; --faint:#6B7280;
+    --line:rgba(236,232,220,.12); --line-strong:rgba(236,232,220,.24);
+    --gold:#C6A052; --gold-2:#E2C588; --gold-soft:rgba(198,160,82,.13);
+    --night:#26344F; --brick:#C0664A;
+    --radius:16px; --maxw:1140px;
+    --shadow:0 2px 4px rgba(0,0,0,.25), 0 24px 60px -28px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Archivo',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(120% 80% at 85% -8%, rgba(198,160,82,.10), transparent 58%),radial-gradient(110% 80% at -5% 108%, rgba(38,52,79,.30), transparent 55%);
+    background-attachment:fixed;}
+  h1,h2,h3,h4{font-family:'Spectral',Georgia,serif;font-weight:700;line-height:1.08;letter-spacing:-.01em;margin:0}
+  .serif{font-family:'Spectral',Georgia,serif}
+  a,.ilink{color:var(--gold-2);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+  button{font-family:inherit}
+  ::selection{background:var(--gold);color:#1a1408}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600}
+
+  header.top{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,rgba(14,17,21,.94),rgba(14,17,21,.78));backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+  .topbar{display:flex;align-items:center;gap:20px;height:66px}
+  .brand{display:flex;align-items:center;gap:12px;cursor:pointer;border:0;background:none;padding:0;color:var(--ink)}
+  .brand .name{font-family:'Spectral';font-weight:700;font-size:19px;letter-spacing:.02em}
+  nav.tabs{display:flex;gap:4px;margin-left:auto}
+  nav.tabs button{border:0;background:none;color:var(--muted);cursor:pointer;padding:9px 14px;border-radius:10px;font-size:14.5px;font-weight:500}
+  nav.tabs button:hover{color:var(--ink);background:rgba(236,232,220,.05)}
+  nav.tabs button[aria-current="true"]{color:var(--gold-2);background:var(--gold-soft)}
+  main{padding:0 0 100px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;border-radius:11px;font-weight:600;font-size:15px;padding:12px 20px;border:1px solid transparent;transition:transform .12s,background .15s,border-color .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-lg{padding:15px 26px;font-size:16.5px}
+  .btn-gold{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:#211803;box-shadow:0 6px 22px -10px rgba(198,160,82,.7)}
+  .btn-gold:hover{filter:brightness(1.06)}
+  .btn-outline{background:transparent;border-color:var(--line-strong);color:var(--ink)}
+  .btn-outline:hover{border-color:var(--gold);color:var(--gold-2)}
+  .btn-ghost{background:rgba(236,232,220,.04);border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{background:rgba(236,232,220,.08)}
+  .btn-quiet{background:none;border:0;color:var(--muted);cursor:pointer;font-weight:600;font-size:14px;padding:8px 6px}
+  .btn-quiet:hover{color:var(--ink)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  *:focus-visible{outline:2.5px solid var(--gold);outline-offset:2px;border-radius:8px}
+
+  /* Accueil */
+  .hero{padding:70px 0 64px;position:relative;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:30px;align-items:center}
+  .slogan{font-size:clamp(54px,10vw,112px);font-weight:800;letter-spacing:-.035em;margin:16px 0 0}
+  .slogan em{display:block;color:var(--gold);font-style:italic;font-weight:700}
+  .hero .lead{color:var(--muted);font-size:18px;max-width:48ch;margin:22px 0 0}
+  .cta-row{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
+  .hero-deco{display:flex;justify-content:center;align-items:center}
+  .cockade{filter:drop-shadow(0 12px 40px rgba(198,160,82,.22))}
+  .cockade .spin{transform-origin:center;animation:rot 90s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  .page{padding:48px 0}
+  .section-title{font-size:clamp(30px,5vw,42px);margin:0 0 10px}
+  .lead{color:var(--muted);font-size:17px;max-width:62ch}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow)}
+  .prose p{margin:0 0 12px} .prose h4{font-size:20px;margin:22px 0 8px;color:var(--gold-2)} .prose ul{margin:6px 0 12px;padding-left:20px} .prose li{margin:4px 0}
+  .placeholder{border:1px dashed var(--line-strong);border-radius:12px;background:repeating-linear-gradient(135deg,transparent,transparent 10px,rgba(198,160,82,.06) 10px,rgba(198,160,82,.06) 20px);padding:16px 18px;color:var(--muted);font-style:italic}
+  .placeholder b{display:inline-block;color:var(--gold);font-style:normal;font-size:11px;letter-spacing:.12em;margin-bottom:4px}
+
+  label.fld{display:block;margin-bottom:15px}
+  label.fld span{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  input[type=text],input[type=email],textarea,select{width:100%;border:1px solid var(--line-strong);border-radius:10px;padding:12px 13px;font-family:inherit;font-size:15px;background:var(--bg-2);color:var(--ink)}
+  input::placeholder,textarea::placeholder{color:var(--faint)}
+  textarea{min-height:120px;resize:vertical}
+
+  /* Comparateur avancé (config) */
+  .config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin:8px 0 24px}
+  .config-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .config-card h4{font-size:16px;font-family:'Archivo';font-weight:700;margin-bottom:10px}
+  .config-card .tools{display:flex;gap:14px;margin-bottom:8px}
+  .config-card .tools button{font-size:12.5px}
+  .chk{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:14.5px;cursor:pointer}
+  .chk input{width:17px;height:17px;accent-color:var(--gold);cursor:pointer;flex:none}
+  .slider{width:100%;accent-color:var(--gold);margin:14px 0 6px}
+  .slider-val{font-family:'Spectral';font-size:30px;color:var(--gold);font-weight:700;line-height:1}
+  .slider-txt{font-size:13px;color:var(--muted);min-height:38px;margin-top:6px}
+
+  /* Test */
+  .quiz{padding:30px 0 0}
+  .quiz-head{display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px}
+  .quiz-head .count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .progress{height:5px;background:var(--line);border-radius:20px;overflow:hidden;margin-bottom:22px}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2));transition:width .35s ease}
+
+  .q-stage{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+  .q-bg{position:absolute;inset:0 0 auto 0;height:280px;background-size:cover;background-position:center;opacity:.9}
+  .q-bg.fallback{background:radial-gradient(120% 120% at 70% -20%, rgba(198,160,82,.18), transparent 60%),linear-gradient(180deg,var(--night),var(--surface))}
+  .q-scrim{position:absolute;inset:0 0 auto 0;height:280px;background:linear-gradient(180deg,rgba(14,17,21,.35) 0%,rgba(14,17,21,.6) 55%,var(--surface) 100%)}
+  .q-content{position:relative;padding:30px}
+  .q-theme{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-2);font-weight:700}
+  .q-label{font-size:clamp(24px,4.4vw,36px);margin:10px 0 20px;max-width:20ch}
+
+  .options{display:flex;flex-direction:column;gap:11px}
+  .opt{position:relative;text-align:left;cursor:pointer;background:var(--bg-2);border:1.5px solid var(--line-strong);border-radius:13px;padding:16px 18px 16px 52px;font-size:16px;color:var(--ink);transition:border-color .12s,background .12s;width:100%}
+  .opt:hover{border-color:var(--gold)}
+  .opt .tick{position:absolute;left:17px;top:50%;transform:translateY(-50%);width:21px;height:21px;border-radius:6px;border:2px solid var(--line-strong);display:grid;place-items:center;transition:.12s}
+  .opt[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+  .opt[aria-pressed="true"] .tick{border-color:var(--gold);background:var(--gold)}
+  .opt[aria-pressed="true"] .tick svg{width:13px;height:13px;color:#211803}
+  .special{display:flex;gap:11px;margin-top:16px;flex-wrap:wrap}
+  .special .opt{flex:1;min-width:210px;padding:14px 18px;text-align:center;font-weight:600;font-size:14.5px}
+  .special .opt.none[aria-pressed="true"]{border-color:var(--brick);background:rgba(192,102,74,.14);color:#e7a18b}
+  .special .opt.ign[aria-pressed="true"]{border-color:var(--muted);background:rgba(236,232,220,.06);color:var(--ink)}
+  .quiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:26px;gap:12px}
+
+  /* Préclassement */
+  .rank-list{display:flex;flex-direction:column;gap:9px;margin:18px 0}
+  .rank-item{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:11px 14px}
+  .rank-item .pos{font-family:'Spectral';font-size:20px;color:var(--gold);width:26px;text-align:center;flex:none}
+  .rank-item .who{flex:1;min-width:0}
+  .rank-item .who .nm{font-weight:700}
+  .rank-item .who .pty{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+  .rank-item .moves{display:flex;flex-direction:column;gap:3px}
+  .rank-item .moves button{width:30px;height:22px;border-radius:6px;border:1px solid var(--line-strong);background:var(--bg-2);color:var(--muted);cursor:pointer;display:grid;place-items:center}
+  .rank-item .moves button:hover:not(:disabled){color:var(--gold);border-color:var(--gold)}
+  .rank-item .moves button:disabled{opacity:.3;cursor:default}
+
+  /* Tutoriel */
+  .tuto-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .callout{display:flex;gap:12px;align-items:flex-start;background:var(--bg-2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:13px 15px;margin-top:11px}
+  .callout .ci{flex:none;color:var(--gold);margin-top:1px}
+  .callout b{display:block;font-size:14px} .callout p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+  .tuto-opt{background:var(--bg-2);border:1.5px solid var(--line-strong);border-radius:11px;padding:13px 16px;margin-top:9px;color:var(--muted)}
+
+  /* Résultats */
+  .res-banner{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);margin-bottom:18px;background:radial-gradient(130% 120% at 80% -30%, rgba(198,160,82,.22), transparent 55%),linear-gradient(180deg,var(--night),var(--surface))}
+  .res-banner .inner{position:relative;padding:30px}
+  .res-banner h2{font-size:clamp(30px,6vw,48px)}
+  .res-banner p{color:var(--ink);max-width:62ch;margin:10px 0 0;opacity:.92}
+  .segmented{display:inline-flex;background:var(--bg-2);border:1px solid var(--line);border-radius:11px;padding:4px;gap:3px;margin:4px 0 18px;flex-wrap:wrap}
+  .segmented button{border:0;background:none;color:var(--muted);font-weight:600;font-size:14px;padding:8px 15px;border-radius:8px;cursor:pointer}
+  .segmented button[aria-current="true"]{background:var(--gold-soft);color:var(--gold-2)}
+
+  .rrow{display:flex;align-items:center;gap:15px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:10px}
+  .rrow .rk{font-family:'Spectral';font-size:22px;width:32px;flex:none;text-align:center}
+  .avatar{display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;flex:none;border:1.5px solid var(--line-strong);background:var(--bg-2)}
+  .avatar-img{width:100%;height:100%;object-fit:cover}
+  .avatar-ini{font-family:'Spectral';font-weight:700;color:var(--gold-2);font-size:15px}
+  .rrow .who{flex:1;min-width:0}
+  .rrow .who .nm{font-weight:700;font-size:16.5px}
+  .rrow .who .pty{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:7px;margin-top:2px}
+  .logo{height:16px;width:auto;max-width:28px;object-fit:contain;border-radius:3px}
+  .dot{width:11px;height:11px;border-radius:50%;flex:none;display:inline-block}
+  .rrow .bar{flex:1.4;height:10px;background:var(--line);border-radius:20px;overflow:hidden;min-width:70px}
+  .rrow .bar > i{display:block;height:100%;border-radius:20px}
+
+  .theme-picker{display:flex;align-items:center;gap:12px;margin:4px 0 16px;flex-wrap:wrap}
+  .theme-picker select{max-width:340px}
+
+  .measures{margin-top:18px}
+  .measure{border:1px solid var(--line);border-radius:13px;background:var(--surface);padding:16px 18px;margin-bottom:11px}
+  .measure .ml{font-weight:700;font-size:16px;margin-bottom:8px}
+  .kept{font-size:15px;padding:8px 0;border-top:1px dashed var(--line)}
+  .kept:first-of-type{border-top:0}
+  .cred{display:inline-flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;background:var(--bg-2);border:1px solid var(--line-strong);border-radius:20px;padding:3px 11px 3px 4px}
+  .chip .avatar{width:22px;height:22px;border-width:1px} .chip .avatar-ini{font-size:10px}
+  .muted{color:var(--muted)}
+
+  /* Comparer */
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .compare-col h4{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:12px;font-family:'Archivo';font-weight:700}
+  .cmp{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:var(--surface);margin-bottom:8px}
+  .cmp .n{font-family:'Spectral';color:var(--gold);width:22px;text-align:center;flex:none;font-size:17px}
+  .cmp .nm{font-weight:600;font-size:14.5px}
+  .cmp .delta{margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums}
+
+  .empty{text-align:center;color:var(--muted);padding:60px 10px}
+  .row-gap{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .mt{margin-top:20px}.mt-s{margin-top:10px}
+
+  footer{border-top:1px solid var(--line);margin-top:30px}
+  footer::before{content:"";display:block;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.4}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .modal-bg{position:fixed;inset:0;background:rgba(8,10,13,.66);display:grid;place-items:center;z-index:50;padding:20px;backdrop-filter:blur(3px)}
+  .modal{background:var(--surface);border:1px solid var(--line-strong);border-radius:18px;max-width:600px;width:100%;padding:28px;max-height:86vh;overflow:auto;box-shadow:var(--shadow)}
+  .modal h3{font-size:22px;margin-bottom:6px}
+  .prog{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .prog:last-child{border-bottom:0}
+
+  .fade{animation:fade .28s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+  @media (max-width:760px){.hero-grid{grid-template-columns:1fr}.hero-deco{order:-1}.compare-grid{grid-template-columns:1fr}nav.tabs button{padding:9px 10px;font-size:13.5px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const {useState,useMemo,useEffect,useRef,createContext,useContext} = React;
+
+/* ───── Lecture de la configuration (config.js) avec replis sûrs ───── */
+const CFG = window.CONFIG || {};
+const T = Object.assign({
+  marque:"Programmes 2027", eyebrowAccueil:"Comparateur de programmes",
+  slogan1:"Voter", slogan2:"librement", accroche:"", aproposTitre:"Quel est cet outil ?",
+  contactIntro:"", preclassIntro:"", tuto:{intro:"",aucune:"",ignorer:""}, profondeur:["","",""],
+}, CFG.textes||{});
+const APROPOS = CFG.apropos || [];
+const COHERENCE = CFG.coherence || [{max:100,msg:""}];
+const candCfg  = name => (CFG.candidats||{})[name] || {};
+const imgTheme = t => (CFG.imagesThemes||{})[t] || "";
+const TEST_CANDS = (CFG.test&&CFG.test.candidats) || [];
+const TEST_PRIO  = (CFG.test&&CFG.test.priorite) || 1;
+
+/* Données de secours (si le .xlsx n'est pas trouvé). Tu édites le .xlsx, pas ceci. */
+const DONNEES_EXEMPLE = [
+  ["", "", "Transition écologique", "", "", "Sécurité", ""],
+  ["", "", "réduire les émissions de CO2", "éducation écologiqe", "Lutter contre les catastrophes naturelles", "Contrôler l'immigration", "Revoir les réglementations sur la consommation de NO2"],
+  ["", "", 1, 3, 2, 1, 4],
+  ["Jean Truc","Parti de gauche droitière","Interdire les voitures","","Interdire les catastrophes","Construire un grand mur aux frontières","Interdire la respiration"],
+  ["José Palfaire","Parti du haut","Interdire les pets","Introduire 150h par an de sensibilisation écologique au collège et lycée","Construire un parapluie à astéroides","Naturaliser toute la population mondiale","Mettre des affiches qui font peur"],
+  ["Golden Julien","Parti du milieu","","Campagne de sensibilsation publicitaire","Bombarder le Liechtenstein","Supprimer le droit du sol","Empoisonner le NO2 du commerce"],
+  ["Christ Cosmique","Parti vert","Interdire le CO2","Supprimer le système de retraite pour acheter des voitures électriques","","Supprimer le droit du sol","Faire exploser le stock de NO2"],
+  ["Mickey","Parti parti","Interdire le CO2","","","Renforcer la douane","Interdire les bombones de gaz"],
+];
+
+/* ───── Parseur ───── */
+const NAME_COL=0, PARTY_COL=1, FIRST=2;
+const clean = v => (v===null||v===undefined)?"":String(v).trim();
+function parseSheet(rows){
+  const themeRow=rows[0]||[],labelRow=rows[1]||[],prioRow=rows[2]||[];
+  const cols=[]; const maxCol=Math.max(themeRow.length,labelRow.length,prioRow.length);
+  for(let c=FIRST;c<maxCol;c++) if(clean(labelRow[c])!=="") cols.push(c);
+  let last=""; const tbc={};
+  for(let c=FIRST;c<=(cols[cols.length-1]??FIRST);c++){ if(clean(themeRow[c])!=="") last=clean(themeRow[c]); tbc[c]=last||"Sans thème"; }
+  const problems=cols.map((c,i)=>({id:"p"+i,col:c,theme:tbc[c],label:clean(labelRow[c])||("Problématique "+(i+1)),
+    priority: clean(prioRow[c])!==""&&Number.isFinite(Number(prioRow[c]))?Number(prioRow[c]):99}));
+  const candidates=[],propos={};
+  for(let r=3;r<rows.length;r++){ const name=clean(rows[r][NAME_COL]); if(name==="")continue;
+    const id="c"+candidates.length; candidates.push({id,name,party:clean(rows[r][PARTY_COL])});
+    propos[id]={}; problems.forEach(p=>{propos[id][p.id]=clean(rows[r][p.col]);}); }
+  const themes=[]; problems.forEach(p=>{if(!themes.includes(p.theme))themes.push(p.theme);});
+  const priorities=[...new Set(problems.map(p=>p.priority))].sort((a,b)=>a-b);
+  return {problems,candidates,propos,themes,priorities};
+}
+const partyOf = (name, fallback) => candCfg(name).parti || fallback || "";
+const colorOf = name => candCfg(name).couleur || "var(--gold)";
+
+const normProp = t => clean(t).toLowerCase().replace(/\s+/g," ");
+function shuffle(arr,seed){const a=[...arr];let s=seed||1;const r=()=>{s=(s*9301+49297)%233280;return s/233280;};
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function buildQuestions(model,{candidateIds,priorities,themes}){
+  const incl=new Set(candidateIds); const qs=[];
+  model.problems.forEach((p,idx)=>{
+    if(priorities&&!priorities.has(p.priority))return;
+    if(themes&&!themes.has(p.theme))return;
+    const g=new Map();
+    model.candidates.forEach(c=>{ if(!incl.has(c.id))return; const txt=model.propos[c.id][p.id]; if(!txt)return;
+      const k=normProp(txt); if(!g.has(k))g.set(k,{id:"o"+g.size,text:txt,candidateIds:[]}); g.get(k).candidateIds.push(c.id); });
+    if(g.size===0)return;
+    qs.push({problemId:p.id,theme:p.theme,label:p.label,priority:p.priority,options:shuffle([...g.values()],idx*97+13)});
+  });
+  return qs;
+}
+
+/* Comptage : renvoie une liste classée (avec rang + égalités) sur un sous-ensemble de paires {q,a}. */
+function tally(pairs, candidateIds, model){
+  const pts={}; candidateIds.forEach(id=>pts[id]=0); let answered=0;
+  pairs.forEach(({q,a})=>{
+    if(!a||a.type==="ignore")return; answered++;
+    if(a.type==="none"){candidateIds.forEach(id=>pts[id]-=1);return;}
+    if(a.type==="pick"){a.optIds.forEach(oid=>{const o=q.options.find(o=>o.id===oid); if(o)o.candidateIds.forEach(c=>{if(c in pts)pts[c]+=1;});});}
+  });
+  const byId=Object.fromEntries(model.candidates.map(c=>[c.id,c]));
+  let list=candidateIds.map(id=>{const kept=Math.max(0,pts[id]); return {...byId[id],kept,denom:answered,pct:answered>0?kept/answered*100:0};});
+  list.sort((a,b)=> b.pct-a.pct || a.name.localeCompare(b.name));
+  let rank=0,prev=null;
+  list=list.map((c,i)=>{ if(prev===null||Math.abs(c.pct-prev)>1e-9){rank=i+1;prev=c.pct;} return {...c,rank}; });
+  return {list,answered};
+}
+
+/* Cohérence pré/post : concordance pondérée par le HAUT du classement. */
+function coherence(preIds, postList){
+  if(!preIds||!preIds.length) return null;
+  const prePos={}; preIds.forEach((id,i)=>prePos[id]=i+1);
+  const postPos={}; postList.forEach(c=>postPos[c.id]=c.rank);
+  const ids=postList.map(c=>c.id).filter(id=>id in prePos);
+  let wSum=0,wConc=0;
+  for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
+    const a=ids[i],b=ids[j];
+    if(postPos[a]===postPos[b]) continue;               // égalité réelle → pas de contrainte
+    const w=1/Math.min(postPos[a],postPos[b]);          // le haut pèse plus
+    wSum+=w;
+    if(Math.sign(prePos[a]-prePos[b])===Math.sign(postPos[a]-postPos[b])) wConc+=w;
+  }
+  return wSum>0 ? Math.round(wConc/wSum*100) : null;
+}
+function coherenceMsg(x){ for(const e of COHERENCE) if(x<=e.max) return e.msg; return COHERENCE[COHERENCE.length-1].msg; }
+
+/* ───── Liens internes dans le texte ───── */
+const Nav = createContext({go:()=>{}, openData:()=>{}});
+function withLinks(str, nav){
+  return String(str).split(/(\[page d'accueil\]|\[Données\])/g).map((p,i)=>{
+    if(p==="[page d'accueil]") return <a key={i} className="ilink" onClick={()=>nav.go("home")}>page d'accueil</a>;
+    if(p==="[Données]") return <a key={i} className="ilink" onClick={()=>nav.openData()}>Données</a>;
+    return <React.Fragment key={i}>{p}</React.Fragment>;
+  });
+}
+function RichText({text}){
+  const nav=useContext(Nav);
+  const lines=String(text).split("\n");
+  const out=[]; let bullets=[];
+  const flush=()=>{ if(bullets.length){ out.push(<ul key={"u"+out.length}>{bullets.map((b,i)=><li key={i}>{withLinks(b,nav)}</li>)}</ul>); bullets=[]; } };
+  lines.forEach(l=>{ const t=l.trim();
+    if(t.startsWith("- ")) bullets.push(t.slice(2));
+    else { flush(); if(t) out.push(<p key={"p"+out.length}>{withLinks(t,nav)}</p>); }
+  });
+  flush(); return <div className="prose">{out}</div>;
+}
+
+/* ───── Icônes & visuels ───── */
+const Ico={
+  check:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4"><path d="M5 12l4.5 4.5L19 7"/></svg>,
+  arrow:<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>,
+  up:<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 15l6-6 6 6"/></svg>,
+  down:<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3"><path d="M6 9l6 6 6-6"/></svg>,
+  eye:<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>,
+  info:<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>,
+};
+function Cockade({size=300, mark=false}){
+  const c=size/2,ticks=[],n=48;
+  for(let i=0;i<n;i++){const ang=(i/n)*Math.PI*2,r1=c*0.62,r2=c*0.9;
+    ticks.push(<line key={i} x1={c+Math.cos(ang)*r1} y1={c+Math.sin(ang)*r1} x2={c+Math.cos(ang)*r2} y2={c+Math.sin(ang)*r2} stroke="var(--gold)" strokeWidth={size>80?1.1:0.8} opacity={i%2?0.35:0.7}/>);}
+  return (<svg className="cockade" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+    <g className={mark?"":"spin"}>{ticks}</g>
+    <circle cx={c} cy={c} r={c*0.9} fill="none" stroke="var(--gold)" strokeWidth={size>80?1.4:1} opacity="0.55"/>
+    <circle cx={c} cy={c} r={c*0.62} fill="none" stroke="var(--gold-2)" strokeWidth={size>80?2.2:1.4}/>
+    <circle cx={c} cy={c} r={c*0.40} fill="none" stroke="var(--gold)" strokeWidth={size>80?1.2:0.9} opacity="0.6"/>
+    <circle cx={c} cy={c} r={c*0.16} fill="var(--gold)" opacity="0.9"/>
+  </svg>);
+}
+function Img({src,alt,className,fallback}){const[e,setE]=useState(false);
+  if(!src||e)return fallback||null; return <img src={src} alt={alt||""} className={className} onError={()=>setE(true)}/>;}
+function Avatar({name,size=44}){const ini=clean(name).split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  return <span className="avatar" style={{width:size,height:size}}><Img src={candCfg(name).photo} alt={name} className="avatar-img" fallback={<span className="avatar-ini">{ini}</span>}/></span>;}
+const Logo=({name})=><Img src={candCfg(name).logo} alt="" className="logo" fallback={<span className="dot" style={{background:colorOf(name)}}/>}/>;
+
+/* ═══════════════ Accueil ═══════════════ */
+function Home({go}){
+  return (
+    <section className="hero fade"><div className="wrap">
+      <div className="hero-grid">
+        <div>
+          <p className="eyebrow">{T.eyebrowAccueil}</p>
+          <h1 className="slogan">{T.slogan1}<em>{T.slogan2}</em></h1>
+          <p className="lead">{T.accroche}</p>
+          <div className="cta-row">
+            <button className="btn btn-gold btn-lg" onClick={()=>go("simple")}>Faire le test {Ico.arrow}</button>
+            <button className="btn btn-outline btn-lg" onClick={()=>go("advanced")}>Comparateur avancé</button>
+          </div>
+        </div>
+        <div className="hero-deco"><Cockade size={300}/></div>
+      </div>
+    </div></section>
+  );
+}
+
+/* ═══════════════ Quel est cet outil ? ═══════════════ */
+function About(){
+  const [sent,setSent]=useState(false);
+  return (
+    <div className="page wrap fade" style={{maxWidth:800}}>
+      <h2 className="section-title">{T.aproposTitre}</h2>
+      <div className="panel mt">
+        {APROPOS.map((s,i)=>(<div key={i}>{s.titre&&<h4 className="serif" style={{fontSize:22,margin:i?"26px 0 8px":"0 0 8px",color:"var(--gold-2)"}}>{s.titre}</h4>}<RichText text={s.texte}/></div>))}
+      </div>
+
+      <h3 id="contact" style={{fontSize:24,margin:"38px 0 12px"}}>Nous écrire</h3>
+      <div className="panel">
+        <div style={{marginBottom:16}}>{clean(T.contactIntro).startsWith("[")
+          ? <div className="placeholder"><b>À RÉDIGER</b><br/>{T.contactIntro}</div>
+          : <RichText text={T.contactIntro}/>}</div>
+        <label className="fld"><span>Nom</span><input type="text" placeholder="Votre nom"/></label>
+        <label className="fld"><span>Email</span><input type="email" placeholder="vous@exemple.fr"/></label>
+        <label className="fld"><span>Message</span><textarea placeholder="Votre message"></textarea></label>
+        <div className="row-gap">
+          <button className="btn btn-gold" onClick={()=>setSent(true)}>Envoyer</button>
+          {sent && <span className="placeholder" style={{padding:"7px 13px"}}><b>À CONNECTER</b> — branche ici l'envoi du formulaire.</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════ Comparateur avancé (config) ═══════════════ */
+function AdvancedConfig({model,onStart}){
+  const [cands,setCands]=useState(()=>new Set(model.candidates.map(c=>c.id)));
+  const [themes,setThemes]=useState(()=>new Set(model.themes));
+  const [degre,setDegre]=useState(5);
+  const toggle=(set,setter,v)=>{const n=new Set(set);n.has(v)?n.delete(v):n.add(v);setter(n);};
+  const all=(items,setter)=>setter(new Set(items)); const none=setter=>setter(new Set());
+
+  const prios=model.priorities;
+  const prioSet=useMemo(()=>{ const upto=Math.max(1,Math.ceil(degre/5*prios.length)); return new Set(prios.slice(0,upto)); },[degre,prios]);
+  const measures=useMemo(()=>buildQuestions(model,{candidateIds:[...cands],priorities:prioSet,themes}).length,[cands,prioSet,themes,model]);
+  const ready=cands.size>0 && measures>0;
+  const minutes=Math.max(1,Math.round(measures/2));
+  const profTxt = degre<=2 ? T.profondeur[0] : degre<=4 ? T.profondeur[1] : T.profondeur[2];
+
+  return (
+    <div className="page wrap fade">
+      <h2 className="section-title">Comparateur avancé</h2>
+      <p className="lead" style={{marginBottom:20}}>Tout est coché par défaut. Restreignez les listes, les thèmes ou le degré d'approfondissement à votre guise.</p>
+      <div className="config-grid">
+        <div className="config-card">
+          <h4>Listes comparées</h4>
+          <div className="tools"><button className="btn-quiet" onClick={()=>all(model.candidates.map(c=>c.id),setCands)}>Tout</button><button className="btn-quiet" onClick={()=>none(setCands)}>Aucun</button></div>
+          {model.candidates.map(c=><label className="chk" key={c.id}><input type="checkbox" checked={cands.has(c.id)} onChange={()=>toggle(cands,setCands,c.id)}/>{c.name}</label>)}
+        </div>
+        <div className="config-card">
+          <h4>Thèmes</h4>
+          <div className="tools"><button className="btn-quiet" onClick={()=>all(model.themes,setThemes)}>Tout</button><button className="btn-quiet" onClick={()=>none(setThemes)}>Aucun</button></div>
+          {model.themes.map(t=><label className="chk" key={t}><input type="checkbox" checked={themes.has(t)} onChange={()=>toggle(themes,setThemes,t)}/>{t}</label>)}
+        </div>
+        <div className="config-card">
+          <h4>Degré d'approfondissement</h4>
+          <div className="slider-val serif">{degre}</div>
+          <input className="slider" type="range" min="1" max="5" step="1" value={degre} onChange={e=>setDegre(Number(e.target.value))}/>
+          <div className="slider-txt">{profTxt}</div>
+        </div>
+      </div>
+      <div className="row-gap">
+        <button className="btn btn-gold" disabled={!ready} onClick={()=>onStart({candidateIds:[...cands],priorities:prioSet,themes})}>
+          Temps estimé : {minutes} min {Ico.arrow}
+        </button>
+        <span style={{color:"var(--muted)",fontSize:13.5}}>{measures} mesure{measures>1?"s":""} · {cands.size} liste{cands.size>1?"s":""}</span>
+      </div>
+      {!ready && <p className="mt-s" style={{color:"#e7a18b",fontSize:13.5}}>Sélectionnez au moins une liste et des filtres produisant des mesures.</p>}
+    </div>
+  );
+}
+
+/* ═══════════════ Test (préclassement → tuto → run → résultats) ═══════════════ */
+function Quiz({model,config,title,onExit}){
+  const questions=useMemo(()=>buildQuestions(model,config),[model,config]);
+  const candObjs=useMemo(()=>config.candidateIds.map(id=>model.candidates.find(c=>c.id===id)).filter(Boolean),[config,model]);
+  const [phase,setPhase]=useState("preclass");
+  const [preOrder,setPreOrder]=useState(null);
+  const [preRank,setPreRank]=useState(()=>candObjs.map(c=>c.id));
+  const [idx,setIdx]=useState(0);
+  const [answers,setAnswers]=useState({});
+  const [tab,setTab]=useState("synth");
+  const [theme,setTheme]=useState("__all__");
+  const [showMeasures,setShowMeasures]=useState(false);
+  const nav=useContext(Nav);
+
+  if(questions.length===0)
+    return <div className="page wrap fade"><div className="empty">Aucune mesure ne correspond à cette sélection.<br/><button className="btn btn-ghost mt" onClick={onExit}>Retour</button></div></div>;
+
+  /* ---- Préclassement ---- */
+  if(phase==="preclass"){
+    const move=(i,d)=>{const a=[...preRank];const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];setPreRank(a);};
+    const byId=Object.fromEntries(model.candidates.map(c=>[c.id,c]));
+    return (
+      <div className="page wrap fade" style={{maxWidth:720}}>
+        <p className="eyebrow">Avant de commencer</p>
+        <h2 className="section-title">Votre classement initial</h2>
+        <p className="lead">{T.preclassIntro}</p>
+        <div className="rank-list">
+          {preRank.map((id,i)=>{const c=byId[id];return (
+            <div className="rank-item" key={id}>
+              <span className="pos serif">{i+1}</span>
+              <Avatar name={c.name} size={38}/>
+              <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{partyOf(c.name,c.party)}</div></div>
+              <div className="moves">
+                <button onClick={()=>move(i,-1)} disabled={i===0} aria-label="Monter">{Ico.up}</button>
+                <button onClick={()=>move(i,1)} disabled={i===preRank.length-1} aria-label="Descendre">{Ico.down}</button>
+              </div>
+            </div>);})}
+        </div>
+        <div className="row-gap">
+          <button className="btn btn-gold" onClick={()=>{setPreOrder([...preRank]);setPhase("tuto");}}>Valider mon classement {Ico.arrow}</button>
+          <button className="btn-quiet" onClick={()=>{setPreOrder(null);setPhase("tuto");}}>Passer cette étape</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---- Tutoriel ---- */
+  if(phase==="tuto"){
+    const ex=questions[0];
+    return (
+      <div className="page wrap fade" style={{maxWidth:760}}>
+        <p className="eyebrow">Comment ça marche</p>
+        <h2 className="section-title">Un exemple avant de commencer</h2>
+        <div className="tuto-card mt-s">
+          <div className="q-theme">{ex.theme}</div>
+          <h3 style={{fontSize:26,margin:"8px 0 14px"}}>{ex.label}</h3>
+          <div className="callout"><span className="ci">{Ico.info}</span><div><b>{T.tuto.intro}</b><p>Les noms des listes restent masqués : vous jugez les propositions seules.</p></div></div>
+          {ex.options.slice(0,2).map(o=><div className="tuto-opt" key={o.id}>{o.text}</div>)}
+          <div className="callout"><span className="ci" style={{color:"var(--brick)"}}>{Ico.info}</span><div><b>Aucune de ces propositions</b><p>{T.tuto.aucune}</p></div></div>
+          <div className="callout"><span className="ci" style={{color:"var(--muted)"}}>{Ico.info}</span><div><b>Ignorer cette mesure</b><p>{T.tuto.ignorer}</p></div></div>
+        </div>
+        <div className="row-gap mt"><button className="btn btn-gold" onClick={()=>setPhase("run")}>J'ai compris, commencer {Ico.arrow}</button></div>
+      </div>
+    );
+  }
+
+  /* ---- Résultats ---- */
+  if(phase==="results"){
+    const byId=Object.fromEntries(model.candidates.map(c=>[c.id,c]));
+    const allPairs=questions.map((q,i)=>({q,a:answers[i]}));
+    const full=tally(allPairs,config.candidateIds,model);
+    const coh=coherence(preOrder, full.list);
+    const themesOrder=[]; questions.forEach(q=>{if(!themesOrder.includes(q.theme))themesOrder.push(q.theme);});
+    const themePairs = theme==="__all__" ? allPairs : allPairs.filter(p=>p.q.theme===theme);
+    const themeRank = tally(themePairs,config.candidateIds,model);
+
+    const RankList=({list})=>(<div>{list.map(c=>(
+      <div className="rrow" key={c.id}>
+        <span className="rk serif" style={{color:colorOf(c.name)}}>{c.rank}</span>
+        <Avatar name={c.name} size={46}/>
+        <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{partyOf(c.name,c.party)}</div></div>
+        <div className="bar"><i style={{width:Math.max(2,c.pct)+"%",background:colorOf(c.name)}}/></div>
+      </div>))}</div>);
+
+    return (
+      <div className="page wrap fade">
+        <div className="res-banner"><div className="inner">
+          <p className="eyebrow">{title} — résultats</p>
+          {coh===null
+            ? <><h2>Vos affinités</h2><p className="muted">Classement initial non renseigné : la cohérence n'a pas pu être mesurée.</p></>
+            : <><h2>Cohérent à {coh}%</h2><p>{withLinks(coherenceMsg(coh),nav)}</p></>}
+        </div></div>
+
+        <div className="segmented">
+          <button aria-current={tab==="synth"} onClick={()=>setTab("synth")}>Classement</button>
+          <button aria-current={tab==="theme"} onClick={()=>setTab("theme")}>Par thème</button>
+          {preOrder && <button aria-current={tab==="cmp"} onClick={()=>setTab("cmp")}>Comparer</button>}
+        </div>
+
+        {tab==="synth" && <div className="fade"><RankList list={full.list}/></div>}
+
+        {tab==="theme" && (
+          <div className="fade">
+            <div className="theme-picker">
+              <label className="muted" style={{fontSize:14}}>Thème :</label>
+              <select value={theme} onChange={e=>{setTheme(e.target.value);}}>
+                <option value="__all__">Tous les thèmes</option>
+                {themesOrder.map(t=><option key={t} value={t}>{t}</option>)}
+              </select>
+              <button className="btn-quiet" onClick={()=>setShowMeasures(s=>!s)}>{showMeasures?"Masquer le détail des mesures":"Détail des mesures"}</button>
+            </div>
+            <RankList list={themeRank.list}/>
+            {showMeasures && (
+              <div className="measures fade">
+                {questions.map((q,qi)=> (theme!=="__all__"&&q.theme!==theme)?null:(
+                  <div className="measure" key={qi}>
+                    <div className="ml">{q.label}</div>
+                    {(()=>{const a=answers[qi];
+                      if(!a||a.type==="ignore")return <div className="muted" style={{fontSize:14}}>Mesure ignorée.</div>;
+                      if(a.type==="none")return <div className="muted" style={{fontSize:14}}>Aucune proposition retenue — pénalité appliquée à toutes les listes.</div>;
+                      const opts=q.options.filter(o=>a.optIds.includes(o.id));
+                      return opts.map(opt=>(
+                        <div className="kept" key={opt.id}>{opt.text}
+                          <div className="cred">{opt.candidateIds.map(cid=>byId[cid]).filter(Boolean).map(c=>(
+                            <span className="chip" key={c.id}><Avatar name={c.name} size={22}/><b>{c.name}</b></span>))}</div>
+                        </div>));
+                    })()}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab==="cmp" && preOrder && (
+          <div className="fade compare-grid">
+            <div className="compare-col"><h4>Avant le test</h4>
+              {preOrder.map((id,i)=>{const c=byId[id];return <div className="cmp" key={id}><span className="n serif">{i+1}</span><span className="dot" style={{background:colorOf(c.name)}}/><span className="nm">{c.name}</span></div>;})}
+            </div>
+            <div className="compare-col"><h4>Après le test</h4>
+              {full.list.map((c)=>{const before=preOrder.indexOf(c.id)+1; const d=before?before-c.rank:0;
+                return <div className="cmp" key={c.id}><span className="n serif">{c.rank}</span><span className="dot" style={{background:colorOf(c.name)}}/><span className="nm">{c.name}</span>
+                  <span className="delta muted">{d>0?`▲ ${d}`:d<0?`▼ ${-d}`:"="}</span></div>;})}
+            </div>
+          </div>
+        )}
+
+        <div className="row-gap mt">
+          <button className="btn-quiet" onClick={()=>{setAnswers({});setIdx(0);setPhase("preclass");setTab("synth");setShowMeasures(false);}}>Recommencer</button>
+          <button className="btn-quiet" onClick={onExit}>Quitter</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---- Déroulé des mesures ---- */
+  const q=questions[idx], a=answers[idx];
+  const set=val=>setAnswers({...answers,[idx]:val});
+  const togglePick=oid=>{let cur=(a&&a.type==="pick")?a.optIds:[];cur=cur.includes(oid)?cur.filter(x=>x!==oid):[...cur,oid];set(cur.length?{type:"pick",optIds:cur}:undefined);};
+  const special=type=>set(a&&a.type===type?undefined:{type});
+  const isPicked=oid=>a&&a.type==="pick"&&a.optIds.includes(oid);
+  const goNext=()=>idx<questions.length-1?setIdx(i=>i+1):setPhase("results");
+  const bg=imgTheme(q.theme);
+  return (
+    <div className="page wrap fade">
+      <div className="quiz-head"><span className="count">Mesure {idx+1} / {questions.length}</span></div>
+      <div className="progress"><i style={{width:(idx/questions.length)*100+"%"}}/></div>
+      <div className="q-stage" key={idx}>
+        <div className={"q-bg"+(bg?"":" fallback")} style={bg?{backgroundImage:`url("${bg}")`}:null}/>
+        <div className="q-scrim"/>
+        <div className="q-content">
+          <div className="q-theme">{q.theme}</div>
+          <h2 className="q-label">{q.label}</h2>
+          <div className="options">
+            {q.options.map(o=>(
+              <button key={o.id} className="opt" aria-pressed={isPicked(o.id)} onClick={()=>togglePick(o.id)}>
+                <span className="tick">{isPicked(o.id)?Ico.check:null}</span>{o.text}
+              </button>))}
+          </div>
+          <div className="special">
+            <button className="opt none" aria-pressed={a&&a.type==="none"} onClick={()=>special("none")}>Aucune de ces propositions</button>
+            <button className="opt ign" aria-pressed={a&&a.type==="ignore"} onClick={()=>special("ignore")}>Ignorer cette mesure</button>
+          </div>
+        </div>
+      </div>
+      <div className="quiz-nav">
+        <button className="btn btn-ghost" onClick={idx===0?()=>setPhase("tuto"):()=>setIdx(i=>i-1)}>{idx===0?"Retour":"Précédent"}</button>
+        <button className="btn btn-gold" onClick={goNext}>{idx<questions.length-1?<>Suivant {Ico.arrow}</>:<>Voir les résultats {Ico.arrow}</>}</button>
+      </div>
+    </div>
+  );
+}
+/* petit utilitaire retiré (les liens sont appliqués via withLinks + nav) */
+
+function Simple({model,onExit}){
+  const config=useMemo(()=>{
+    const ids=TEST_CANDS.map(n=>model.candidates.find(c=>c.name.toLowerCase()===String(n).toLowerCase())).filter(Boolean).map(c=>c.id);
+    return {candidateIds:ids,priorities:new Set([TEST_PRIO]),themes:null};
+  },[model]);
+  if(config.candidateIds.length===0)
+    return <div className="page wrap"><div className="empty">Aucun des noms de <code>test.candidats</code> (config.js) n'a été trouvé dans le tableur.<br/><button className="btn btn-ghost mt" onClick={onExit}>Retour</button></div></div>;
+  return <div className="quiz"><Quiz model={model} config={config} title="Faire le test" onExit={onExit}/></div>;
+}
+function Advanced({model,onExit}){
+  const [config,setConfig]=useState(null);
+  if(!config) return <AdvancedConfig model={model} onStart={setConfig}/>;
+  return <div className="quiz"><Quiz model={model} config={config} title="Comparateur avancé" onExit={()=>setConfig(null)}/></div>;
+}
+
+/* ═══════════════ Onglet Données (liens vers les programmes) ═══════════════ */
+function DataModal({model,onClose}){
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <h3>Programmes des candidats</h3>
+        <p className="muted" style={{fontSize:14,margin:"0 0 10px"}}>Source de chaque proposition utilisée dans l'outil.</p>
+        {model.candidates.map(c=>{const lien=candCfg(c.name).lien;return (
+          <div className="prog" key={c.id}>
+            <Avatar name={c.name} size={38}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700}}>{c.name}</div>
+              <div className="muted" style={{fontSize:13,display:"flex",alignItems:"center",gap:6}}><Logo name={c.name}/>{partyOf(c.name,c.party)}</div>
+            </div>
+            {lien ? <a className="btn btn-outline" href={lien} target="_blank" rel="noopener">Programme {Ico.arrow}</a>
+                  : <span className="muted" style={{fontSize:13}}>lien à venir</span>}
+          </div>);})}
+        <div className="row-gap mt"><button className="btn btn-ghost" onClick={onClose}>Fermer</button></div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════ App ═══════════════ */
+function App(){
+  const [view,setView]=useState("home");
+  const [rows,setRows]=useState(DONNEES_EXEMPLE);
+  const [showData,setShowData]=useState(false);
+  const model=useMemo(()=>parseSheet(rows),[rows]);
+
+  useEffect(()=>{ fetch("./Comparaison_programmes.xlsx").then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();})
+    .then(buf=>{const wb=XLSX.read(buf,{type:"array"});const ws=wb.Sheets[wb.SheetNames[0]];
+      const r=XLSX.utils.sheet_to_json(ws,{header:1,defval:""}); if(r.length>3)setRows(r);}).catch(()=>{}); },[]);
+
+  const go=v=>{setView(v);window.scrollTo({top:0,behavior:"smooth"});};
+  const goContact=()=>{setView("about");setTimeout(()=>{const el=document.getElementById("contact");if(el)el.scrollIntoView({behavior:"smooth"});},120);};
+  const openData=()=>setShowData(true);
+  const tabs=[["home","Accueil"],["about","Quel est cet outil ?"]];
+
+  return (
+    <Nav.Provider value={{go,openData}}>
+      <header className="top"><div className="wrap topbar">
+        <button className="brand" onClick={()=>go("home")}><Cockade size={32} mark={true}/><span className="name">{T.marque}</span></button>
+        <nav className="tabs">{tabs.map(([k,l])=><button key={k} aria-current={view===k} onClick={()=>go(k)}>{l}</button>)}</nav>
+      </div></header>
+
+      <main>
+        {view==="home"     && <Home go={go}/>}
+        {view==="about"    && <About/>}
+        {view==="simple"   && <Simple   model={model} onExit={()=>go("home")}/>}
+        {view==="advanced" && <Advanced model={model} onExit={()=>go("home")}/>}
+      </main>
+
+      <footer><div className="wrap foot">
+        <a className="ilink" onClick={goContact}>Nous contacter</a>
+        <button className="btn-quiet" onClick={openData}>Données</button>
+      </div></footer>
+
+      {showData && <DataModal model={model} onClose={()=>setShowData(false)}/>}
+    </Nav.Provider>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
