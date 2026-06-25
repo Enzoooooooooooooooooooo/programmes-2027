@@ -119,21 +119,21 @@ window.CONFIG = {
        parti, couleur (#hex), logo (URL/chemin), photo (URL/chemin),
        lien (programme officiel → onglet « Données »).                        */
   candidats: {
-    "Nathalie Arthaud":      { parti: "Lutte Ouvrière (LO)",                              couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "François Asselineau":    { parti: "Union Populaire Républicaine (UPR)",              couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Gabriel Attal":         { parti: "Renaissance (RE)",                                 couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Delphine Batho":        { parti: "Génération Écologie (GE)",                         couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Xavier Bertrand":       { parti: "Les Républicains (LR)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Karim Bouamrane":       { parti: "Parti Socialiste (PS)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Nicolas Dupont-Aignan": { parti: "Debout la France (DLF)",                           couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Jérôme Guedj":          { parti: "Parti Socialiste (PS)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Anasse Kazib":          { parti: "Révolution Permanente (RP)",                       couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Selma Labib":           { parti: "Nouveau Parti Anticapitaliste Révolutionnaire (NPA)", couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Marine Le Pen":         { parti: "Rassemblement National (RN)",                      couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Jean-Luc Mélenchon":    { parti: "La France Insoumise (LFI)",                        couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Édouard Philippe":      { parti: "Horizons (HOR)",                                   couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Florian Philippot":     { parti: "Les Patriotes (LP)",                               couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
-    "Bruno Retailleau":      { parti: "Les Républicains (LR)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Nathalie Arthaud":      { parti: "Lutte Ouvrière (LO)",                              couleur: "#CC0000", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_Lutte_Ouvri%C3%A8re.svg/960px-Logo_Lutte_Ouvri%C3%A8re.svg.png", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Nathalie_Arthaud_%28LO%29_19-05-2024.jpg/500px-Nathalie_Arthaud_%28LO%29_19-05-2024.jpg", lien: "https://www.lutte-ouvriere.org/" },
+    "François Asselineau":    { parti: "Union Populaire Républicaine (UPR)",              couleur: "#00737C", logo: "https://upload.wikimedia.org/wikipedia/fr/thumb/a/ac/UPR-Logo-2015.png/960px-UPR-Logo-2015.png", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Fran%C3%A7ois_ASSELINEAU.jpg/500px-Fran%C3%A7ois_ASSELINEAU.jpg", lien: "https://upr.fr/" },
+    "Gabriel Attal":         { parti: "Renaissance (RE)",                                 couleur: "#0B49B6", logo: "https://cdn.prod.website-files.com/652418149107f2736cbe65d9/652958ff3990300a6e831543_LOGO%20RE%20Grand%20NOIR.svg", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Gabriel_Attal_2025_%28close_crop%29.jpg/500px-Gabriel_Attal_2025_%28close_crop%29.jpg", lien: "https://parti-renaissance.fr/" },
+    "Delphine Batho":        { parti: "Génération Écologie (GE)",                         couleur: "#57B546", logo: "https://upload.wikimedia.org/wikipedia/fr/d/d8/G%C3%A9n%C3%A9ration_%C3%A9cologie_logo.png", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Delphine_Batho_%28cropped-2%29.png/500px-Delphine_Batho_%28cropped-2%29.png", lien: "https://www.generationecologie.fr/" },
+    "Xavier Bertrand":       { parti: "Les Républicains (LR)",                            couleur: "#1A3162", logo: "https://republicains.fr/wp-content/uploads/2025/09/Les_republicains_logo-01.svg", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Xavier_Bertrand_-_2025_%28cropped%29.jpg/500px-Xavier_Bertrand_-_2025_%28cropped%29.jpg", lien: "https://republicains.fr/" },
+    "Karim Bouamrane":       { parti: "Parti Socialiste (PS)",                            couleur: "#FF0055", logo: "https://parti-socialiste.fr/wp-content/uploads/2026/04/xlogo_PS.png.pagespeed.ic.yIWhuePOMn.webp", photo: "https://img.lemde.fr/2026/06/09/0/0/6902/4601/664/0/75/0/a845ac3_upload-1-cjn3x8pw9epp-000-43fg29g.jpg", lien: "https://parti-socialiste.fr/" },
+    "Nicolas Dupont-Aignan": { parti: "Debout la France (DLF)",                           couleur: "#0265AC", logo: "https://www.debout-la-france.fr/wp-content/uploads/2022/11/logo-debout-la-france-fr.png", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Nicolas_Dupont-Aignan%2C_homme_politique_fran%C3%A7ais.jpg/500px-Nicolas_Dupont-Aignan%2C_homme_politique_fran%C3%A7ais.jpg", lien: "https://www.debout-la-france.fr/" },
+    "Jérôme Guedj":          { parti: "Parti Socialiste (PS)",                            couleur: "#FF0055", logo: "https://parti-socialiste.fr/wp-content/uploads/2026/04/xlogo_PS.png.pagespeed.ic.yIWhuePOMn.webp", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/J%C3%A9r%C3%B4me_Guedj_2010.jpg/500px-J%C3%A9r%C3%B4me_Guedj_2010.jpg", lien: "https://parti-socialiste.fr/" },
+    "Anasse Kazib":          { parti: "Révolution Permanente (RP)",                       couleur: "#C12627", logo: "https://www.revolutionpermanente.fr/squelettes/assets/img/logo.svg", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Anasse_Kazib%2C_d%C3%A9cembre_2021.jpg/500px-Anasse_Kazib%2C_d%C3%A9cembre_2021.jpg", lien: "https://www.revolutionpermanente.fr/" },
+    "Selma Labib":           { parti: "Nouveau Parti Anticapitaliste Révolutionnaire (NPA)", couleur: "#BE1621", logo: "https://npa-lanticapitaliste.org/sites/default/files/signal-2024-04-29-171053_002_1.png", photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJR74RQfoLwBUL41lHGmRbC67zSaxO_jrm4spcyDDiww&s=10", lien: "https://npa-lanticapitaliste.org/" },
+    "Marine Le Pen":         { parti: "Rassemblement National (RN)",                      couleur: "#2982C6", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Logo_Rassemblement_National.svg/langfr-960px-Logo_Rassemblement_National.svg.png", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Marine_Le_Pen_2025_%28cropped%29.jpg/500px-Marine_Le_Pen_2025_%28cropped%29.jpg", lien: "https://rassemblementnational.fr/" },
+    "Jean-Luc Mélenchon":    { parti: "La France Insoumise (LFI)",                        couleur: "#7B13D6", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTO7VAdr9w9wBPyCXARpkWr-TUI7Y5wqa6RlBX_4L0&usqp=CAE&s", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/M%C3%A9lenchon_2027_-_55263136641_%28cropped_3-4%2C_2%29.png/500px-M%C3%A9lenchon_2027_-_55263136641_%28cropped_3-4%2C_2%29.png", lien: "https://lafranceinsoumise.fr/" },
+    "Édouard Philippe":      { parti: "Horizons (HOR)",                                   couleur: "#27348A", logo: "https://horizonsleparti.fr/wp-content/uploads/2021/10/logo-blanc.svg", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Edouard_Philippe_3x4_crop.jpg/500px-Edouard_Philippe_3x4_crop.jpg", lien: "https://horizonsleparti.fr/" },
+    "Florian Philippot":     { parti: "Les Patriotes (LP)",                               couleur: "#E88A28", logo: "https://upload.wikimedia.org/wikipedia/fr/thumb/3/31/Les_Patriotes_2018.png/330px-Les_Patriotes_2018.png", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/2022-04-16_16-49-26_MAM-Paris_02.jpg/500px-2022-04-16_16-49-26_MAM-Paris_02.jpg", lien: "https://les-patriotes.fr/" },
+    "Bruno Retailleau":      { parti: "Les Républicains (LR)",                            couleur: "#1A3162", logo: "https://republicains.fr/wp-content/uploads/2025/09/Les_republicains_logo-01.svg", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/2022-04-16_16-49-26_MAM-Paris_02.jpg/500px-2022-04-16_16-49-26_MAM-Paris_02.jpg", lien: "https://republicains.fr/" },
   },
 
   /* ── 6) Test rapide (« Faire le test ») ────────────────────────────────────
@@ -144,7 +144,7 @@ window.CONFIG = {
                  1 = mesures les plus consensuelles (couvertes par 80-100 % des
                  partis) … 5 = les moins couvertes (0-20 %).                   */
   test: {
-    candidats: ["Nathalie Arthaud", "François Asselineau", "Gabriel Attal", "Delphine Batho"],
+    candidats: ["Gabriel Attal", "Marine le Pen", "Jean-Luc Mélenchon", "Bruno Retailleau"],
     priorite: 1,
   },
 };
