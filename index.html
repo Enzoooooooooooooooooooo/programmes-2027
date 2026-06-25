@@ -285,14 +285,21 @@ const clean = v => (v===null||v===undefined)?"":String(v).trim();
 const priorityFromCoverage = cov => Math.min(5, Math.max(1, 5 - Math.floor(cov*5)));
 
 function parseSheet(rows){
-  const themeRow=rows[0]||[],labelRow=rows[1]||[];
+  // Détection automatique : 1re ligne de candidat = 1re ligne (après la 1re)
+  // ayant À LA FOIS un nom (col A) et un parti (col B). La ligne juste au-dessus
+  // contient les libellés ; la 1re ligne contient les thèmes. Ainsi le tableur
+  // fonctionne que la « ligne priorité » existe encore ou non.
+  let firstCand=-1;
+  for(let r=1;r<rows.length;r++){ if(clean(rows[r][NAME_COL])!=="" && clean(rows[r][PARTY_COL])!==""){ firstCand=r; break; } }
+  if(firstCand<1) firstCand=2;
+  const themeRow=rows[0]||[], labelRow=rows[firstCand-1]||[];
   const cols=[]; const maxCol=Math.max(themeRow.length,labelRow.length);
   for(let c=FIRST;c<maxCol;c++) if(clean(labelRow[c])!=="") cols.push(c);
   let last=""; const tbc={};
   for(let c=FIRST;c<=(cols[cols.length-1]??FIRST);c++){ if(clean(themeRow[c])!=="") last=clean(themeRow[c]); tbc[c]=last||"Sans thème"; }
   const problems=cols.map((c,i)=>({id:"p"+i,col:c,theme:tbc[c],label:clean(labelRow[c])||("Problématique "+(i+1))}));
   const candidates=[],propos={};
-  for(let r=3;r<rows.length;r++){ const name=clean(rows[r][NAME_COL]); if(name==="")continue;
+  for(let r=firstCand;r<rows.length;r++){ const name=clean(rows[r][NAME_COL]); if(name==="")continue;
     const id="c"+candidates.length; candidates.push({id,name,party:clean(rows[r][PARTY_COL])});
     propos[id]={}; problems.forEach(p=>{propos[id][p.id]=clean(rows[r][p.col]);}); }
   // priorité calculée à partir du nombre de partis qui se prononcent
@@ -307,7 +314,7 @@ function parseSheet(rows){
   });
   const themes=[]; problems.forEach(p=>{if(!themes.includes(p.theme))themes.push(p.theme);});
   const priorities=[...new Set(problems.map(p=>p.priority))].sort((a,b)=>a-b);
-  return {problems,candidates,propos,themes,priorities,totalParties};
+  return {problems,candidates,propos,themes,priorities,totalParties,firstRow:firstCand+1};
 }
 const partyOf = (name, fallback) => candCfg(name).parti || fallback || "";
 const colorOf = name => candCfg(name).couleur || "var(--gold)";
@@ -852,7 +859,13 @@ function App(){
   const gate = node => {
     if(dataState==="loading") return <div className="page wrap"><div className="empty">Chargement des données…</div></div>;
     if(dataState==="error")   return <div className="page wrap"><div className="empty">Impossible de charger <code>Comparaison_programmes.xlsx</code>.<br/><span className="muted">En local (fichier ouvert depuis le disque), les données n'apparaissent qu'une fois le site hébergé. Sur GitHub Pages, vérifie que le fichier est bien à la racine du dépôt.</span><br/><button className="btn btn-ghost mt" onClick={()=>go("home")}>Retour</button></div></div>;
-    if(model && model.problems.length===0) return <div className="page wrap"><div className="empty">Le tableur ne contient pas encore de mesures.<br/><span className="muted">Renseigne les libellés des problématiques (ligne 2) et les propositions des candidats.</span><br/><button className="btn btn-ghost mt" onClick={()=>go("home")}>Retour</button></div></div>;
+    if(model && model.problems.length===0) return <div className="page wrap"><div className="empty">
+      Le tableur chargé ne contient aucune mesure exploitable.<br/>
+      <span className="muted">Diagnostic du fichier chargé : <b>{model.candidates.length}</b> candidat(s), <b>{model.problems.length}</b> problématique(s).</span><br/>
+      <span className="muted">{model.candidates.length>0
+        ? "Les candidats sont lus, mais la ligne des libellés (juste au-dessus du premier candidat) est vide. Vérifie qu'elle contient bien un intitulé par colonne, puis re-déploie le .xlsx à jour et recharge (Ctrl+F5)."
+        : "Aucun candidat détecté : le fichier en ligne est peut-être l'ancienne version. Re-exporte ton tableur, remplace Comparaison_programmes.xlsx sur GitHub, puis recharge (Ctrl+F5)."}</span><br/>
+      <button className="btn btn-ghost mt" onClick={()=>go("home")}>Retour</button></div></div>;
     return node;
   };
 
