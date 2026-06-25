@@ -60,6 +60,14 @@ window.CONFIG = {
     { max: 100, msg: "Impressionnant ! Vos opinions politiques sont en parfait accord avec vos valeurs et pensées. Vous avez une compréhension avancée du programme des candidats qui vous intéressent." },
   ],
 
+  /* ── 3 bis) Onglet « Données » : liste de liens de référence ──────────────
+     Le premier lien doit pointer vers le dépôt GitHub du projet.            */
+  liens: [
+    { label: "Code source et données du projet (GitHub)", url: "https://github.com/Enzoooooooooooooooooooo/programmes-2027" },
+    // { label: "Autre source…", url: "https://…" },
+  ],
+
+
   /* ── 4) Fonds d'image par thème (URL ou chemin local ; vide = repli) ─────
      Clé = nom EXACT du thème (ligne 1 du tableur).                          */
   imagesThemes: {
@@ -111,27 +119,30 @@ window.CONFIG = {
        parti, couleur (#hex), logo (URL/chemin), photo (URL/chemin),
        lien (programme officiel → onglet « Données »).                        */
   candidats: {
-    "Nathalie Arthaud":      { parti: "Lutte Ouvrière (LO)",                              couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "François Asselineau":    { parti: "Union Populaire Républicaine (UPR)",              couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Gabriel Attal":         { parti: "Renaissance (RE)",                                 couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Delphine Batho":        { parti: "Génération Écologie (GE)",                         couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Xavier Bertrand":       { parti: "Les Républicains (LR)",                            couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Karim Bouamrane":       { parti: "Parti Socialiste (PS)",                            couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Nicolas Dupont-Aignan": { parti: "Debout la France (DLF)",                           couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Jérôme Guedj":          { parti: "Parti Socialiste (PS)",                            couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Anasse Kazib":          { parti: "Révolution Permanente (RP)",                       couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Selma Labib":           { parti: "Nouveau Parti Anticapitaliste Révolutionnaire (NPA)", couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Marine Le Pen":         { parti: "Rassemblement National (RN)",                      couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Jean-Luc Mélenchon":    { parti: "La France Insoumise (LFI)",                        couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Édouard Philippe":      { parti: "Horizons (HOR)",                                   couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Florian Philippot":     { parti: "Les Patriotes (LP)",                               couleur: "#C6A052", logo: "", photo: "", lien: "" },
-    "Bruno Retailleau":      { parti: "Les Républicains (LR)",                            couleur: "#C6A052", logo: "", photo: "", lien: "" },
+    "Nathalie Arthaud":      { parti: "Lutte Ouvrière (LO)",                              couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "François Asselineau":    { parti: "Union Populaire Républicaine (UPR)",              couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Gabriel Attal":         { parti: "Renaissance (RE)",                                 couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Delphine Batho":        { parti: "Génération Écologie (GE)",                         couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Xavier Bertrand":       { parti: "Les Républicains (LR)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Karim Bouamrane":       { parti: "Parti Socialiste (PS)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Nicolas Dupont-Aignan": { parti: "Debout la France (DLF)",                           couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Jérôme Guedj":          { parti: "Parti Socialiste (PS)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Anasse Kazib":          { parti: "Révolution Permanente (RP)",                       couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Selma Labib":           { parti: "Nouveau Parti Anticapitaliste Révolutionnaire (NPA)", couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Marine Le Pen":         { parti: "Rassemblement National (RN)",                      couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Jean-Luc Mélenchon":    { parti: "La France Insoumise (LFI)",                        couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Édouard Philippe":      { parti: "Horizons (HOR)",                                   couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Florian Philippot":     { parti: "Les Patriotes (LP)",                               couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
+    "Bruno Retailleau":      { parti: "Les Républicains (LR)",                            couleur: "#1B2A6B", logo: "", photo: "", lien: "" },
   },
 
   /* ── 6) Test rapide (« Faire le test ») ────────────────────────────────────
      candidats : les 4 listes du test rapide (mets les noms que TU veux).
-     priorite  : ne garde que les mesures de ce niveau de priorité (ligne 3
-                 du tableur) ; doit correspondre à une valeur présente.       */
+     priorite  : niveau de priorité conservé pour le test rapide.
+                 La priorité est désormais CALCULÉE automatiquement : plus de
+                 partis se prononcent sur une mesure, plus elle est prioritaire.
+                 1 = mesures les plus consensuelles (couvertes par 80-100 % des
+                 partis) … 5 = les moins couvertes (0-20 %).                   */
   test: {
     candidats: ["Nathalie Arthaud", "François Asselineau", "Gabriel Attal", "Delphine Batho"],
     priorite: 1,
