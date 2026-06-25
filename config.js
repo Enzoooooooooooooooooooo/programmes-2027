@@ -11,7 +11,7 @@ window.CONFIG = {
     marque:        "Programmes 2027",         // haut à gauche (bandeau)
     eyebrowAccueil:"Comparateur de programmes",
     slogan1:       "Voter",                   // grand titre, 1re ligne
-    slogan2:       "librement",               // grand titre, 2e ligne (en or)
+    slogan2:       "mais pour qui ?",               // grand titre, 2e ligne (en or)
     accroche:      "Programmes à jour du 23/06/2026",
     aproposTitre:  "Quel est cet outil ?",
 
@@ -43,11 +43,13 @@ window.CONFIG = {
       texte: "Les solutions proposées sont issues du programme officiel de chaque candidat, et sont laissées telles quelles. Chaque programme utilisé est référencé dans l'onglet [Données]. Chaque proposition sélectionnée donne un « point » au candidat à qui elle appartient. Si aucune des propositions ne convient, l'ensemble des candidats est pénalisé. Le score final de chaque candidat correspond simplement au nombre de points lui ayant été attribué sur le nombre de points distribué sur l'ensemble du questionnaire." },
     { titre: "Limites",
       texte: "Bien que cet outil élimine un grand nombre de biais, il en conserve voire en accentue certains.\n"
-           + "- Les propositions proposées sont rédigées par les partis politiques et ne sont par définition pas neutres.\n"
+           + "- Les propositions proposées sont rédigées par les partis politiques et ne sont par définition pas neutres. Cet outil ne prend par exemple pas en compte la crédibilité des programmes. \n"
            + "- Si un parti propose 10 fois plus de mesures qu'un autre, il sera ici surreprésenté d'un facteur 10. Pour qu'un programme avec peu de mesures soit en tête des résultats, cela demande d'ignorer un grand nombre de mesures couvertes par les autres programmes.\n"
            + "- Dans le questionnaire avancé, le choix des paramètres influence fortement la représentation de chaque programme. Essayez de conserver un panel assez large de thèmes et candidats couverts pour ne pas artificiellement gonfler le résultat d'une liste avant même le début du test." },
     { titre: "Disclaimer",
       texte: "Cet outil comporte des biais et n'est en aucun cas une représentation objective de vos opinions ni une consigne de vote. Cet outil n'a pas non plus vocation à hiérarchiser les candidats sur la base de leur programme ou opinion, et tous les classements montrés sont uniquement à but statistique. Faites vos choix et forgez vos opinions de manière éclairée et responsable." },
+    { titre: "IA",
+      texte: "L'architecture du site est réalisée à l'aide d'une intelligence artificielle, Claude Opus 4.8. Seul le code est rédigé par l'IA, et tous les textes, calculs, et liens sont renseignés par un humain et consultables dans l'onglet [Données]." },
   ],
 
   /* ── 3) Messages de résultat selon la cohérence (x %) ─────────────────────
