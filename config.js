@@ -15,7 +15,7 @@ window.CONFIG = {
     accroche:      "Programmes à jour du 23/06/2026",
     aproposTitre:  "Quel est cet outil ?",
     contactEmail:  "enzo.bruder.jeannot@gmail.com",   // destinataire du formulaire de contact
-    formspreeId:   "",   // (optionnel) identifiant Formspree, ex. "xtrabcde" → envoi direct sans ouvrir la messagerie. Vide = mode mailto.
+    formspreeId:   "xrewpayn",   // (optionnel) identifiant Formspree, ex. "xtrabcde" → envoi direct sans ouvrir la messagerie. Vide = mode mailto.
 
     preclassIntro: "Avant de commencer, classez les listes selon vos affinités, telles que vous les percevez aujourd'hui. Glissez les noms pour les ordonner. Cette étape sert à mesurer votre cohérence à la fin. Elle est facultative.",
 
