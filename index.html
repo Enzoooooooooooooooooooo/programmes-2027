@@ -76,7 +76,7 @@
   .hero{padding:70px 0 64px;position:relative;overflow:hidden}
   .hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:30px;align-items:center}
   .slogan{font-size:clamp(54px,10vw,112px);font-weight:800;letter-spacing:-.035em;margin:16px 0 0}
-  .slogan em{display:block;color:var(--blue);font-style:italic;font-weight:700}
+  .slogan em{display:block;color:var(--blue);font-style:italic;font-weight:700;font-size:.5em;letter-spacing:-.02em;white-space:nowrap}
   .hero .lead{color:var(--muted);font-size:18px;max-width:48ch;margin:22px 0 0}
   .cta-row{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
   .hero-deco{display:flex;justify-content:center;align-items:center}
@@ -154,6 +154,11 @@
   a.candcard{cursor:pointer;text-decoration:none;color:inherit;transition:transform .1s,box-shadow .15s}
   a.candcard:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
   .candcard .chev{flex:none;color:var(--muted);display:flex}
+  .candcard .party-right{flex:none;display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13.5px;text-align:right}
+  .candcard .party-right .plogo{display:flex}
+  .candcard .party-right .logo{height:24px;max-width:46px}
+  .candcard .party-right .pname{max-width:240px}
+  @media (max-width:560px){ .candcard .party-right .pname{display:none} }
   /* préclassement */
   .candcard .grip{flex:none;width:30px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--muted);cursor:grab;display:grid;place-items:center;touch-action:none;-webkit-user-select:none;user-select:none}
   .candcard .grip:active{cursor:grabbing;color:var(--blue);border-color:var(--blue)}
@@ -169,6 +174,20 @@
   .candcard .bar > i{display:block;height:100%;border-radius:20px}
   .candcard .rk-score{font-family:'Spectral';font-weight:700;font-size:24px;flex:none;width:56px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
   .rank-list{margin:18px 0}
+  /* boîte « sans préférence » */
+  .candcard.neutral{display:block;border-style:dashed;background:rgba(22,33,63,.035)}
+  .candcard.neutral .cbody.neu{display:block;padding:12px 15px}
+  .neu-head{display:flex;align-items:center;gap:13px}
+  .neu-head .who{flex:1;min-width:0}
+  .neu-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .neuchip{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line-strong);background:#fff;border-radius:30px;padding:4px 11px 4px 4px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}
+  .neuchip:hover{background:var(--gold-soft)}
+  .neuchip .cn{white-space:nowrap}
+  .neuchip .pop{display:flex;color:var(--muted)}
+  .neuchip:hover .pop{color:var(--blue)}
+  .back-neu{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .back-neu:hover{color:var(--blue);border-color:var(--blue)}
+  .cmp-neu{align-items:flex-start}
 
   /* Tutoriel pas-à-pas (spotlight) */
   .tuto-static{padding-left:18px!important;cursor:default}
@@ -274,7 +293,7 @@ const {useState,useMemo,useEffect,useLayoutEffect,useRef,createContext,useContex
 const CFG = window.CONFIG || {};
 const T = Object.assign({
   marque:"Programmes 2027", eyebrowAccueil:"Comparateur de programmes",
-  slogan1:"Voter", slogan2:"librement", accroche:"", aproposTitre:"Quel est cet outil ?",
+  slogan1:"Voter", slogan2:"librement", accroche:"", aproposTitre:"Quel est cet outil ?", contactEmail:"enzo.bruder.jeannot@gmail.com", formspreeId:"",
   contactIntro:"", preclassIntro:"", tuto:{intro:"",aucune:"",ignorer:""}, profondeur:["","",""],
 }, CFG.textes||{});
 const APROPOS = CFG.apropos || [];
@@ -371,16 +390,18 @@ function tally(pairs, candidateIds, model){
   return {list,answered};
 }
 
-/* Cohérence pré/post : concordance pondérée par le HAUT du classement. */
-function coherence(preIds, postList){
-  if(!preIds||!preIds.length) return null;
-  const prePos={}; preIds.forEach((id,i)=>prePos[id]=i+1);
+/* Cohérence pré/post : concordance pondérée par le HAUT du classement.
+   `pre` = objet { prePos:{id:rang} } (les listes « neutres » partagent le même rang). */
+function coherence(pre, postList){
+  const prePos = pre && pre.prePos;
+  if(!prePos || Object.keys(prePos).length===0) return null;
   const postPos={}; postList.forEach(c=>postPos[c.id]=c.rank);
   const ids=postList.map(c=>c.id).filter(id=>id in prePos);
   let wSum=0,wConc=0;
   for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
     const a=ids[i],b=ids[j];
-    if(postPos[a]===postPos[b]) continue;               // égalité réelle → pas de contrainte
+    if(postPos[a]===postPos[b]) continue;               // égalité réelle dans les résultats
+    if(prePos[a]===prePos[b]) continue;                 // les deux « sans préférence » → pas de contrainte
     const w=1/Math.min(postPos[a],postPos[b]);          // le haut pèse plus
     wSum+=w;
     if(Math.sign(prePos[a]-prePos[b])===Math.sign(postPos[a]-postPos[b])) wConc+=w;
@@ -489,7 +510,8 @@ function Home({go,model}){
                 const inner=(<>
                   <CardPhoto name={c.name}/>
                   <div className="cbody">
-                    <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{c.party}</div></div>
+                    <div className="who"><div className="nm">{c.name}</div></div>
+                    <div className="party-right"><span className="plogo"><Logo name={c.name}/></span><span className="pname">{c.party}</span></div>
                     {lien && <span className="chev">{Ico.arrow}</span>}
                   </div></>);
                 return lien
@@ -516,18 +538,49 @@ function About(){
 
 /* ═══════════════ Contact (page isolée) ═══════════════ */
 function Contact(){
-  const [sent,setSent]=useState(false);
+  const [nom,setNom]=useState(""); const [email,setEmail]=useState(""); const [msg,setMsg]=useState("");
+  const [status,setStatus]=useState("idle"); // idle | sending | sent | error
+  const addr = T.contactEmail || "enzo.bruder.jeannot@gmail.com";
+  const formId = (T.formspreeId||"").trim();   // si renseigné → envoi direct via Formspree
+  const ok = msg.trim().length>0;
+
+  const sendMailto=()=>{
+    const subject = "Contact — Programmes 2027" + (nom.trim()?` — ${nom.trim()}`:"");
+    const body = `${msg.trim()}\n\n— ${nom.trim()||"Anonyme"}${email.trim()?` (${email.trim()})`:""}`;
+    window.location.href = `mailto:${addr}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+  const send=async()=>{
+    if(!ok) return;
+    if(!formId){ sendMailto(); return; }                 // pas d'identifiant Formspree → messagerie
+    setStatus("sending");
+    try{
+      const r=await fetch("https://formspree.io/f/"+formId,{
+        method:"POST", headers:{Accept:"application/json"},
+        body:(()=>{const f=new FormData(); f.append("nom",nom); f.append("email",email); f.append("message",msg); if(email)f.append("_replyto",email); return f;})(),
+      });
+      if(r.ok){ setStatus("sent"); setNom("");setEmail("");setMsg(""); }
+      else setStatus("error");
+    }catch(_){ setStatus("error"); }
+  };
+
   return (
     <div className="page wrap fade" style={{maxWidth:620}}>
       <h2 className="section-title">Nous contacter</h2>
       <div className="panel mt">
-        <label className="fld"><span>Nom</span><input type="text" placeholder="Votre nom"/></label>
-        <label className="fld"><span>Email</span><input type="email" placeholder="vous@exemple.fr"/></label>
-        <label className="fld"><span>Message</span><textarea placeholder="Votre message"></textarea></label>
-        <div className="row-gap">
-          <button className="btn btn-gold" onClick={()=>setSent(true)}>Envoyer</button>
-          {sent && <span className="placeholder" style={{padding:"7px 13px"}}><b>À CONNECTER</b> — branche ici l'envoi du formulaire.</span>}
-        </div>
+        {status==="sent"
+          ? <div><p style={{fontSize:16,marginTop:0}}>Merci, votre message a bien été envoyé.</p>
+              <button className="btn btn-ghost" onClick={()=>setStatus("idle")}>Envoyer un autre message</button></div>
+          : <>
+            <label className="fld"><span>Nom</span><input type="text" value={nom} onChange={e=>setNom(e.target.value)} placeholder="Votre nom"/></label>
+            <label className="fld"><span>Email</span><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="vous@exemple.fr"/></label>
+            <label className="fld"><span>Message</span><textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Votre message"></textarea></label>
+            <div className="row-gap">
+              <button className="btn btn-gold" onClick={send} disabled={!ok||status==="sending"}>{status==="sending"?"Envoi…":<>Envoyer {Ico.arrow}</>}</button>
+              {!formId && <span className="muted" style={{fontSize:13}}>Ouvre votre messagerie pour finaliser l'envoi.</span>}
+              {status==="error" && <span style={{color:"var(--red-2)",fontSize:13}}>Échec de l'envoi. Réessayez ou écrivez directement par mail.</span>}
+            </div>
+            <p className="muted" style={{fontSize:13,margin:"14px 0 0"}}>Ou écrivez directement à <a className="ilink" href={`mailto:${addr}`}>{addr}</a>.</p>
+          </>}
       </div>
     </div>
   );
@@ -581,43 +634,83 @@ function AdvancedConfig({model,onStart}){
   );
 }
 
-/* ═══════════════ Préclassement (drag & drop, tactile) ═══════════════ */
+/* ═══════════════ Préclassement (boîte « neutre » + drag tactile) ═══════════════ */
+const NEU = "__neutral__";
 function PreClass({candObjs,onValidate,onSkip}){
-  const [order,setOrder]=useState(()=>candObjs.map(c=>c.id));
-  const [dragId,setDragId]=useState(null);
   const byId=Object.fromEntries(candObjs.map(c=>[c.id,c]));
+  const [slots,setSlots]=useState([NEU]);                 // ordre des « cases » : ids + la boîte neutre
+  const [neutral,setNeutral]=useState(()=>new Set(candObjs.map(c=>c.id)));
+  const [dragKey,setDragKey]=useState(null);
   const itemRefs=useRef({});
-  const move=(i,d)=>{const a=[...order];const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];setOrder(a);};
-  const onDown=(e,id)=>{ setDragId(id); try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){} };
-  const onMove=(e)=>{ if(!dragId)return; e.preventDefault(); const y=e.clientY; let count=0;
-    order.forEach(id=>{ if(id===dragId)return; const el=itemRefs.current[id]; if(!el)return;
+  const neutralList=candObjs.filter(c=>neutral.has(c.id));
+
+  const move=(i,d)=>{const a=[...slots];const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];setSlots(a);};
+  const pullOut=id=>{ setNeutral(s=>{const n=new Set(s);n.delete(id);return n;});
+    setSlots(s=>{const ni=s.indexOf(NEU);const a=[...s];a.splice(ni,0,id);return a;}); };   // se place juste au-dessus de la boîte
+  const putBack=id=>{ setSlots(s=>s.filter(x=>x!==id)); setNeutral(s=>{const n=new Set(s);n.add(id);return n;}); };
+
+  const onDown=(e,k)=>{ setDragKey(k); try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){} };
+  const onMove=(e)=>{ if(!dragKey)return; e.preventDefault(); const y=e.clientY; let count=0;
+    slots.forEach(k=>{ if(k===dragKey)return; const el=itemRefs.current[k]; if(!el)return;
       const r=el.getBoundingClientRect(); if(y>r.top+r.height/2)count++; });
-    const without=order.filter(x=>x!==dragId); without.splice(count,0,dragId);
-    if(without.join("|")!==order.join("|")) setOrder(without);
+    const without=slots.filter(x=>x!==dragKey); without.splice(count,0,dragKey);
+    if(without.join("|")!==slots.join("|")) setSlots(without); };
+  const onUp=()=>setDragKey(null);
+
+  const validate=()=>{
+    const prePos={}; slots.forEach((s,i)=>{ const rank=i+1; if(s===NEU)[...neutral].forEach(id=>prePos[id]=rank); else prePos[s]=rank; });
+    onValidate({prePos, slots:[...slots], neutral:[...neutral], neutralRank: slots.indexOf(NEU)+1});
   };
-  const onUp=()=>setDragId(null);
+
   return (
-    <div className="page wrap fade" style={{maxWidth:720}}>
+    <div className="page wrap fade" style={{maxWidth:760}}>
       <p className="eyebrow">Avant de commencer</p>
       <h2 className="section-title">Votre classement initial</h2>
-      <p className="lead">{T.preclassIntro}</p>
+      <p className="lead">{T.preclassIntro} Toutes les listes sont d'abord « sans préférence » : sortez-en celles que vous souhaitez classer, et glissez-les à la bonne place.</p>
       <div className="rank-list">
-        {order.map((id,i)=>{const c=byId[id];return (
-          <div className={"candcard"+(dragId===id?" dragging":"")} key={id} ref={el=>itemRefs.current[id]=el} style={cardStyle(c.name)}>
-            <CardPhoto name={c.name}/>
-            <div className="cbody">
-              <button className="grip" onPointerDown={e=>onDown(e,id)} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Glisser pour déplacer">{Ico.grip}</button>
-              <span className="pos serif">{i+1}</span>
-              <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{partyOf(c.name,c.party)}</div></div>
-              <div className="moves">
-                <button onClick={()=>move(i,-1)} disabled={i===0} aria-label="Monter">{Ico.up}</button>
-                <button onClick={()=>move(i,1)} disabled={i===order.length-1} aria-label="Descendre">{Ico.down}</button>
+        {slots.map((key,i)=>{
+          const rank=i+1;
+          if(key===NEU) return (
+            <div className={"candcard neutral"+(dragKey===NEU?" dragging":"")} key="NEU" ref={el=>itemRefs.current[NEU]=el}>
+              <div className="cbody neu">
+                <div className="neu-head">
+                  <button className="grip" onPointerDown={e=>onDown(e,NEU)} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Déplacer la boîte neutre">{Ico.grip}</button>
+                  <span className="pos serif">{rank}</span>
+                  <div className="who"><div className="nm">Sans préférence</div><div className="pty muted">Ces listes sont à égalité — sortez-en pour les classer</div></div>
+                  <div className="moves">
+                    <button onClick={()=>move(i,-1)} disabled={i===0} aria-label="Monter">{Ico.up}</button>
+                    <button onClick={()=>move(i,1)} disabled={i===slots.length-1} aria-label="Descendre">{Ico.down}</button>
+                  </div>
+                </div>
+                <div className="neu-chips">
+                  {neutralList.length===0
+                    ? <span className="muted" style={{fontSize:13}}>Toutes les listes ont été classées.</span>
+                    : neutralList.map(c=>(
+                        <button className="neuchip" key={c.id} style={{borderColor:colorOf(c.name)}} onClick={()=>pullOut(c.id)} title="Sortir et classer">
+                          <Avatar name={c.name} size={24}/><span className="cn">{c.name}</span><span className="pop">{Ico.up}</span>
+                        </button>))}
+                </div>
               </div>
-            </div>
-          </div>);})}
+            </div>);
+          const c=byId[key];
+          return (
+            <div className={"candcard"+(dragKey===key?" dragging":"")} key={key} ref={el=>itemRefs.current[key]=el} style={cardStyle(c.name)}>
+              <CardPhoto name={c.name}/>
+              <div className="cbody">
+                <button className="grip" onPointerDown={e=>onDown(e,key)} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Glisser pour déplacer">{Ico.grip}</button>
+                <span className="pos serif">{rank}</span>
+                <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{partyOf(c.name,c.party)}</div></div>
+                <button className="back-neu" onClick={()=>putBack(key)} title="Remettre sans préférence">↩ neutre</button>
+                <div className="moves">
+                  <button onClick={()=>move(i,-1)} disabled={i===0} aria-label="Monter">{Ico.up}</button>
+                  <button onClick={()=>move(i,1)} disabled={i===slots.length-1} aria-label="Descendre">{Ico.down}</button>
+                </div>
+              </div>
+            </div>);
+        })}
       </div>
       <div className="row-gap">
-        <button className="btn btn-gold" onClick={()=>onValidate([...order])}>Valider mon classement {Ico.arrow}</button>
+        <button className="btn btn-gold" onClick={validate}>Valider mon classement {Ico.arrow}</button>
         <button className="btn-quiet" onClick={onSkip}>Passer cette étape</button>
       </div>
     </div>
@@ -731,7 +824,7 @@ function Quiz({model,config,title,onExit}){
           <span className="rk serif">{c.rank}</span>
           <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{partyOf(c.name,c.party)}</div></div>
           <div className="bar"><i style={{width:Math.max(2,c.pct)+"%",background:colorOf(c.name)}}/></div>
-          <div className="rk-score serif">{Math.round(c.pct)}%</div>
+          <div className="rk-score serif">{Math.round(c.pct)}</div>
         </div>
       </div>))}</div>);
 
@@ -788,10 +881,20 @@ function Quiz({model,config,title,onExit}){
         {tab==="cmp" && preOrder && (
           <div className="fade compare-grid">
             <div className="compare-col"><h4>Avant le test</h4>
-              {preOrder.map((id,i)=>{const c=byId[id];return <div className="cmp" key={id}><span className="n serif">{i+1}</span><span className="dot" style={{background:colorOf(c.name)}}/><span className="nm">{c.name}</span></div>;})}
+              {preOrder.slots.map((key,i)=>{
+                if(key===NEU) return (
+                  <div className="cmp cmp-neu" key="NEU"><span className="n serif">{i+1}</span>
+                    <span className="nm" style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+                      <span className="muted">Sans préférence :</span>
+                      {preOrder.neutral.map(id=>byId[id]).filter(Boolean).map(c=>
+                        <span key={c.id} style={{display:"inline-flex",alignItems:"center",gap:4}}><span className="dot" style={{background:colorOf(c.name)}}/>{c.name}</span>)}
+                    </span></div>);
+                const c=byId[key];
+                return <div className="cmp" key={key}><span className="n serif">{i+1}</span><span className="dot" style={{background:colorOf(c.name)}}/><span className="nm">{c.name}</span></div>;
+              })}
             </div>
             <div className="compare-col"><h4>Après le test</h4>
-              {full.list.map((c)=>{const before=preOrder.indexOf(c.id)+1; const d=before?before-c.rank:0;
+              {full.list.map((c)=>{const before=preOrder.prePos[c.id]; const d=before?before-c.rank:0;
                 return <div className="cmp" key={c.id}><span className="n serif">{c.rank}</span><span className="dot" style={{background:colorOf(c.name)}}/><span className="nm">{c.name}</span>
                   <span className="delta muted">{d>0?`▲ ${d}`:d<0?`▼ ${-d}`:"="}</span></div>;})}
             </div>
