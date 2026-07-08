@@ -188,6 +188,13 @@
   .back-neu{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
   .back-neu:hover{color:var(--blue);border-color:var(--blue)}
   .cmp-neu{align-items:flex-start}
+  /* hachurage (dernier programme national publié) */
+  .candcard.hatched .cbody{position:relative}
+  .candcard.hatched .cbody::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,transparent 0 7px,rgba(22,33,63,.13) 7px 9px)}
+  .neuchip.hatched{position:relative;overflow:hidden}
+  .neuchip.hatched::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,transparent 0 6px,rgba(22,33,63,.13) 6px 8px)}
+  .hatch-legend{display:inline-flex;align-items:center;gap:9px;margin:14px 0 2px;font-size:13px;color:var(--muted)}
+  .hatch-swatch{flex:none;width:28px;height:17px;border-radius:4px;border:1px solid var(--line-strong);background:repeating-linear-gradient(45deg,#fff 0 7px,rgba(22,33,63,.17) 7px 9px)}
 
   /* Tutoriel pas-à-pas (spotlight) */
   .tuto-static{padding-left:18px!important;cursor:default}
@@ -356,6 +363,7 @@ function hexToRgba(hex,a){
 /* Bordure = couleur du candidat ; fond = même couleur très claire (décalée vers le blanc). */
 const cardStyle = name => { const c=colorOf(name);
   return {borderColor:c, background:`linear-gradient(0deg, ${hexToRgba(c,.13)}, ${hexToRgba(c,.13)}), #fff`}; };
+const isHatched = name => !!candCfg(name).hachure;
 
 const normProp = t => clean(t).toLowerCase().replace(/\s+/g," ");
 function shuffle(arr,seed){const a=[...arr];let s=seed||1;const r=()=>{s=(s*9301+49297)%233280;return s/233280;};
@@ -467,6 +475,10 @@ function CardPhoto({name}){
     <Img src={candCfg(name).photo} alt={name} fallback={<span className="ini" style={{color:colorOf(name)}}>{ini}</span>}/>
   </span>;
 }
+function HatchLegend({names}){
+  if(!names || !names.some(isHatched)) return null;
+  return <div className="hatch-legend"><span className="hatch-swatch"/>dernier programme national publié</div>;
+}
 
 /* ═══════════════ Accueil ═══════════════ */
 function candidateList(model){
@@ -515,10 +527,11 @@ function Home({go,model}){
                     {lien && <span className="chev">{Ico.arrow}</span>}
                   </div></>);
                 return lien
-                  ? <a className="candcard" key={c.name} href={lien} target="_blank" rel="noopener" style={cardStyle(c.name)}>{inner}</a>
-                  : <div className="candcard" key={c.name} style={cardStyle(c.name)}>{inner}</div>;
+                  ? <a className={"candcard"+(isHatched(c.name)?" hatched":"")} key={c.name} href={lien} target="_blank" rel="noopener" style={cardStyle(c.name)}>{inner}</a>
+                  : <div className={"candcard"+(isHatched(c.name)?" hatched":"")} key={c.name} style={cardStyle(c.name)}>{inner}</div>;
               })}
         </div>
+        <HatchLegend names={list.map(c=>c.name)}/>
       </div></section>
     </div>
   );
@@ -636,10 +649,10 @@ function AdvancedConfig({model,onStart}){
 
 /* ═══════════════ Préclassement (boîte « neutre » + drag tactile) ═══════════════ */
 const NEU = "__neutral__";
-function PreClass({candObjs,onValidate,onSkip}){
+function PreClass({candObjs,onValidate,onSkip,useNeutral}){
   const byId=Object.fromEntries(candObjs.map(c=>[c.id,c]));
-  const [slots,setSlots]=useState([NEU]);                 // ordre des « cases » : ids + la boîte neutre
-  const [neutral,setNeutral]=useState(()=>new Set(candObjs.map(c=>c.id)));
+  const [slots,setSlots]=useState(()=> useNeutral ? [NEU] : candObjs.map(c=>c.id));
+  const [neutral,setNeutral]=useState(()=> new Set(useNeutral ? candObjs.map(c=>c.id) : []));
   const [dragKey,setDragKey]=useState(null);
   const itemRefs=useRef({});
   const neutralList=candObjs.filter(c=>neutral.has(c.id));
@@ -666,7 +679,7 @@ function PreClass({candObjs,onValidate,onSkip}){
     <div className="page wrap fade" style={{maxWidth:760}}>
       <p className="eyebrow">Avant de commencer</p>
       <h2 className="section-title">Votre classement initial</h2>
-      <p className="lead">{T.preclassIntro} Toutes les listes sont d'abord « sans préférence » : sortez-en celles que vous souhaitez classer, et glissez-les à la bonne place.</p>
+      <p className="lead">{T.preclassIntro}{useNeutral && " Toutes les listes sont d'abord « sans préférence » : sortez-en celles que vous souhaitez classer, et glissez-les à la bonne place."}</p>
       <div className="rank-list">
         {slots.map((key,i)=>{
           const rank=i+1;
@@ -686,7 +699,7 @@ function PreClass({candObjs,onValidate,onSkip}){
                   {neutralList.length===0
                     ? <span className="muted" style={{fontSize:13}}>Toutes les listes ont été classées.</span>
                     : neutralList.map(c=>(
-                        <button className="neuchip" key={c.id} style={{borderColor:colorOf(c.name)}} onClick={()=>pullOut(c.id)} title="Sortir et classer">
+                        <button className={"neuchip"+(isHatched(c.name)?" hatched":"")} key={c.id} style={{borderColor:colorOf(c.name)}} onClick={()=>pullOut(c.id)} title="Sortir et classer">
                           <Avatar name={c.name} size={24}/><span className="cn">{c.name}</span><span className="pop">{Ico.up}</span>
                         </button>))}
                 </div>
@@ -694,13 +707,13 @@ function PreClass({candObjs,onValidate,onSkip}){
             </div>);
           const c=byId[key];
           return (
-            <div className={"candcard"+(dragKey===key?" dragging":"")} key={key} ref={el=>itemRefs.current[key]=el} style={cardStyle(c.name)}>
+            <div className={"candcard"+(dragKey===key?" dragging":"")+(isHatched(c.name)?" hatched":"")} key={key} ref={el=>itemRefs.current[key]=el} style={cardStyle(c.name)}>
               <CardPhoto name={c.name}/>
               <div className="cbody">
                 <button className="grip" onPointerDown={e=>onDown(e,key)} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Glisser pour déplacer">{Ico.grip}</button>
                 <span className="pos serif">{rank}</span>
                 <div className="who"><div className="nm">{c.name}</div><div className="pty"><Logo name={c.name}/>{partyOf(c.name,c.party)}</div></div>
-                <button className="back-neu" onClick={()=>putBack(key)} title="Remettre sans préférence">↩ neutre</button>
+                {useNeutral && <button className="back-neu" onClick={()=>putBack(key)} title="Remettre sans préférence">↩ neutre</button>}
                 <div className="moves">
                   <button onClick={()=>move(i,-1)} disabled={i===0} aria-label="Monter">{Ico.up}</button>
                   <button onClick={()=>move(i,1)} disabled={i===slots.length-1} aria-label="Descendre">{Ico.down}</button>
@@ -709,6 +722,7 @@ function PreClass({candObjs,onValidate,onSkip}){
             </div>);
         })}
       </div>
+      <HatchLegend names={candObjs.map(c=>c.name)}/>
       <div className="row-gap">
         <button className="btn btn-gold" onClick={validate}>Valider mon classement {Ico.arrow}</button>
         <button className="btn-quiet" onClick={onSkip}>Passer cette étape</button>
@@ -782,7 +796,7 @@ function TutoExample({q,onDone}){
 }
 
 /* ═══════════════ Test (préclassement → tuto → run → résultats) ═══════════════ */
-function Quiz({model,config,title,onExit}){
+function Quiz({model,config,title,onExit,neutral}){
   const questions=useMemo(()=>buildQuestions(model,config),[model,config]);
   const candObjs=useMemo(()=>config.candidateIds.map(id=>model.candidates.find(c=>c.id===id)).filter(Boolean),[config,model]);
   const [phase,setPhase]=useState("preclass");
@@ -799,7 +813,7 @@ function Quiz({model,config,title,onExit}){
 
   /* ---- Préclassement ---- */
   if(phase==="preclass")
-    return <PreClass candObjs={candObjs}
+    return <PreClass candObjs={candObjs} useNeutral={!!neutral}
       onValidate={o=>{setPreOrder(o);setPhase("tuto");}}
       onSkip={()=>{setPreOrder(null);setPhase("tuto");}}/>;
 
@@ -843,7 +857,7 @@ function Quiz({model,config,title,onExit}){
           {preOrder && <button aria-current={tab==="cmp"} onClick={()=>setTab("cmp")}>Comparer</button>}
         </div>
 
-        {tab==="synth" && <div className="fade"><RankList list={full.list}/></div>}
+        {tab==="synth" && <div className="fade"><RankList list={full.list}/><HatchLegend names={full.list.map(c=>c.name)}/></div>}
 
         {tab==="theme" && (
           <div className="fade">
@@ -856,6 +870,7 @@ function Quiz({model,config,title,onExit}){
               <button className="btn-quiet" onClick={()=>setShowMeasures(s=>!s)}>{showMeasures?"Masquer le détail des mesures":"Détail des mesures"}</button>
             </div>
             <RankList list={themeRank.list}/>
+            <HatchLegend names={themeRank.list.map(c=>c.name)}/>
             {showMeasures && (
               <div className="measures fade">
                 {questions.map((q,qi)=> (theme!=="__all__"&&q.theme!==theme)?null:(
@@ -961,7 +976,7 @@ function Simple({model,onExit}){
 function Advanced({model,onExit}){
   const [config,setConfig]=useState(null);
   if(!config) return <AdvancedConfig model={model} onStart={setConfig}/>;
-  return <div className="quiz"><Quiz model={model} config={config} title="Comparateur avancé" onExit={()=>setConfig(null)}/></div>;
+  return <div className="quiz"><Quiz model={model} config={config} title="Comparateur avancé" neutral={true} onExit={()=>setConfig(null)}/></div>;
 }
 
 /* ═══════════════ Onglet Données (liste de liens de référence) ═══════════════ */
