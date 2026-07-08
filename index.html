@@ -138,6 +138,11 @@
   .special .opt{flex:1;min-width:210px;padding:14px 18px;text-align:center;font-weight:600;font-size:14.5px}
   .special .opt.none[aria-pressed="true"]{border-color:var(--red);background:rgba(213,40,31,.10);color:var(--red-2)}
   .special .opt.ign[aria-pressed="true"]{border-color:var(--muted);background:rgba(22,33,63,.05);color:var(--ink)}
+  .options .opt{display:flex;flex-wrap:wrap;align-items:center}
+  .options .opt .opt-text{flex:1;min-width:0}
+  .prec-btn{flex:none;margin-left:10px;border:1px solid var(--line-strong);background:#fff;color:var(--muted);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:600;cursor:pointer}
+  .prec-btn:hover{color:var(--blue);border-color:var(--blue)}
+  .opt-prec{flex-basis:100%;margin-top:11px;font-size:12.5px;line-height:1.55;color:var(--muted);border-left:2px solid var(--line-strong);padding-left:11px;white-space:pre-wrap}
   .quiz-nav{display:flex;justify-content:space-between;align-items:center;margin-top:26px;gap:12px}
 
   /* Préclassement */
@@ -335,10 +340,12 @@ function parseSheet(rows){
   let last=""; const tbc={};
   for(let c=FIRST;c<=(cols[cols.length-1]??FIRST);c++){ if(clean(themeRow[c])!=="") last=clean(themeRow[c]); tbc[c]=last||"Sans thème"; }
   const problems=cols.map((c,i)=>({id:"p"+i,col:c,theme:tbc[c],label:clean(labelRow[c])||("Problématique "+(i+1))}));
-  const candidates=[],propos={};
+  const candidates=[],propos={},precisions={};
   for(let r=firstCand;r<rows.length;r++){ const name=clean(rows[r][NAME_COL]); if(name==="")continue;
     const id="c"+candidates.length; candidates.push({id,name,party:clean(rows[r][PARTY_COL])});
-    propos[id]={}; problems.forEach(p=>{propos[id][p.id]=clean(rows[r][p.col]);}); }
+    propos[id]={}; precisions[id]={};
+    const nextRow=rows[r+1]; const hasPrec = nextRow && clean(nextRow[NAME_COL])==="";  // 2e ligne (nom vide) = précisions
+    problems.forEach(p=>{ propos[id][p.id]=clean(rows[r][p.col]); precisions[id][p.id]= hasPrec?clean(nextRow[p.col]):""; }); }
   // priorité calculée à partir du nombre de partis qui se prononcent
   const partyKey = cd => clean(cd.party) || cd.name;
   const totalParties = new Set(candidates.map(partyKey)).size || 1;
@@ -351,7 +358,7 @@ function parseSheet(rows){
   });
   const themes=[]; problems.forEach(p=>{if(!themes.includes(p.theme))themes.push(p.theme);});
   const priorities=[...new Set(problems.map(p=>p.priority))].sort((a,b)=>a-b);
-  return {problems,candidates,propos,themes,priorities,totalParties,firstRow:firstCand+1};
+  return {problems,candidates,propos,precisions,themes,priorities,totalParties,firstRow:firstCand+1};
 }
 const partyOf = (name, fallback) => candCfg(name).parti || fallback || "";
 const colorOf = name => candCfg(name).couleur || "#1B2A6B";
@@ -369,15 +376,19 @@ const normProp = t => clean(t).toLowerCase().replace(/\s+/g," ");
 function shuffle(arr,seed){const a=[...arr];let s=seed||1;const r=()=>{s=(s*9301+49297)%233280;return s/233280;};
   for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function buildQuestions(model,{candidateIds,priorities,themes}){
-  const incl=new Set(candidateIds); const qs=[];
+  const incl=new Set(candidateIds); const qs=[]; const prec=model.precisions||{};
   model.problems.forEach((p,idx)=>{
     if(priorities&&!priorities.has(p.priority))return;
     if(themes&&!themes.has(p.theme))return;
     const g=new Map();
     model.candidates.forEach(c=>{ if(!incl.has(c.id))return; const txt=model.propos[c.id][p.id]; if(!txt)return;
-      const k=normProp(txt); if(!g.has(k))g.set(k,{id:"o"+g.size,text:txt,candidateIds:[]}); g.get(k).candidateIds.push(c.id); });
+      const k=normProp(txt); if(!g.has(k))g.set(k,{id:"o"+g.size,text:txt,candidateIds:[],precs:[]});
+      const grp=g.get(k); grp.candidateIds.push(c.id);
+      const pr=(prec[c.id]||{})[p.id]; if(pr) grp.precs.push(pr); });
     if(g.size===0)return;
-    qs.push({problemId:p.id,theme:p.theme,label:p.label,priority:p.priority,options:shuffle([...g.values()],idx*97+13)});
+    const options=[...g.values()].map(o=>{ const uniq=[...new Set(o.precs.map(x=>clean(x)).filter(Boolean))];
+      return {id:o.id,text:o.text,candidateIds:o.candidateIds,precision:uniq.join("\n")}; });
+    qs.push({problemId:p.id,theme:p.theme,label:p.label,priority:p.priority,options:shuffle(options,idx*97+13)});
   });
   return qs;
 }
@@ -806,6 +817,7 @@ function Quiz({model,config,title,onExit,neutral}){
   const [tab,setTab]=useState("synth");
   const [theme,setTheme]=useState("__all__");
   const [showMeasures,setShowMeasures]=useState(false);
+  const [openPrec,setOpenPrec]=useState({});
   const nav=useContext(Nav);
 
   if(questions.length===0)
@@ -944,10 +956,18 @@ function Quiz({model,config,title,onExit,neutral}){
         <div className="q-content">
           <h2 className="q-label">{q.label}</h2>
           <div className="options">
-            {q.options.map(o=>(
-              <button key={o.id} className="opt" aria-pressed={isPicked(o.id)} onClick={()=>togglePick(o.id)}>
-                <span className="tick">{isPicked(o.id)?Ico.check:null}</span>{o.text}
-              </button>))}
+            {q.options.map(o=>{
+              const pk=idx+":"+o.id, open=!!openPrec[pk];
+              return (
+              <div key={o.id} className="opt" role="button" tabIndex={0} aria-pressed={isPicked(o.id)}
+                   onClick={()=>togglePick(o.id)}
+                   onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();togglePick(o.id);}}}>
+                <span className="tick">{isPicked(o.id)?Ico.check:null}</span>
+                <span className="opt-text">{o.text}</span>
+                {o.precision && <button className="prec-btn" onClick={e=>{e.stopPropagation();setOpenPrec(s=>({...s,[pk]:!s[pk]}));}} aria-expanded={open}>{open?"Masquer":"Précisions"}</button>}
+                {o.precision && open && <div className="opt-prec" onClick={e=>e.stopPropagation()}>{o.precision}</div>}
+              </div>);
+            })}
           </div>
           <div className="special">
             <button className="opt none" aria-pressed={a&&a.type==="none"} onClick={()=>special("none")}>Aucune de ces propositions</button>
