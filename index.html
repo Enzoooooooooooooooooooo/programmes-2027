@@ -193,7 +193,7 @@
   .back-neu{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
   .back-neu:hover{color:var(--blue);border-color:var(--blue)}
   .cmp-neu{align-items:flex-start}
-  /* hachurage (dernier programme national publié) */
+  /* hachurage (programme indisponible) */
   .candcard.hatched .cbody{position:relative}
   .candcard.hatched .cbody::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,transparent 0 7px,rgba(22,33,63,.13) 7px 9px)}
   .neuchip.hatched{position:relative;overflow:hidden}
@@ -243,8 +243,10 @@
   .measures{margin-top:18px}
   .measure{border:1px solid var(--line);border-radius:13px;background:var(--surface);padding:16px 18px;margin-bottom:11px}
   .measure .ml{font-weight:700;font-size:16px;margin-bottom:8px}
-  .kept{font-size:15px;padding:8px 0;border-top:1px dashed var(--line)}
-  .kept:first-of-type{border-top:0}
+  .kept{display:flex;align-items:center;gap:14px;padding:12px 15px;border:1.5px solid var(--line-strong);border-radius:12px;background:#fff;margin-bottom:9px}
+  .kept-text{flex:1;min-width:0;font-size:15px}
+  .kept-prec{font-size:12.5px;color:var(--muted);margin-top:6px;border-left:2px solid var(--line-strong);padding-left:9px;white-space:pre-wrap}
+  .kept-cred{flex:none;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:46%}
   .cred{display:inline-flex;flex-wrap:wrap;gap:7px;margin-top:6px}
   .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;background:var(--bg-2);border:1px solid var(--line-strong);border-radius:20px;padding:3px 11px 3px 4px}
   .chip .avatar{width:22px;height:22px;border-width:1px} .chip .avatar-ini{font-size:10px}
@@ -285,7 +287,7 @@
   .fade{animation:fade .28s ease}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
-  @media (max-width:760px){.hero-grid{grid-template-columns:1fr}.hero-deco{order:-1}.compare-grid{grid-template-columns:1fr}nav.tabs button{padding:9px 10px;font-size:13.5px}}
+  @media (max-width:760px){.hero-grid{grid-template-columns:1fr}.hero-deco{display:none}.compare-grid{grid-template-columns:1fr}nav.tabs button{padding:9px 10px;font-size:13.5px}}
   @media (max-width:560px){
     .cardphoto{width:52px}
     .candcard .cbody{gap:9px;padding:9px 11px}
@@ -326,39 +328,53 @@ const clean = v => (v===null||v===undefined)?"":String(v).trim();
    80-100 % → 1 · 60-80 % → 2 · 40-60 % → 3 · 20-40 % → 4 · 0-20 % → 5      */
 const priorityFromCoverage = cov => Math.min(5, Math.max(1, 5 - Math.floor(cov*5)));
 
-function parseSheet(rows){
-  // Détection automatique : 1re ligne de candidat = 1re ligne (après la 1re)
-  // ayant À LA FOIS un nom (col A) et un parti (col B). La ligne juste au-dessus
-  // contient les libellés ; la 1re ligne contient les thèmes. Ainsi le tableur
-  // fonctionne que la « ligne priorité » existe encore ou non.
-  let firstCand=-1;
-  for(let r=1;r<rows.length;r++){ if(clean(rows[r][NAME_COL])!=="" && clean(rows[r][PARTY_COL])!==""){ firstCand=r; break; } }
-  if(firstCand<1) firstCand=2;
-  const themeRow=rows[0]||[], labelRow=rows[firstCand-1]||[];
-  const cols=[]; const maxCol=Math.max(themeRow.length,labelRow.length);
-  for(let c=FIRST;c<maxCol;c++) if(clean(labelRow[c])!=="") cols.push(c);
-  let last=""; const tbc={};
-  for(let c=FIRST;c<=(cols[cols.length-1]??FIRST);c++){ if(clean(themeRow[c])!=="") last=clean(themeRow[c]); tbc[c]=last||"Sans thème"; }
-  const problems=cols.map((c,i)=>({id:"p"+i,col:c,theme:tbc[c],label:clean(labelRow[c])||("Problématique "+(i+1))}));
-  const candidates=[],propos={},precisions={};
-  for(let r=firstCand;r<rows.length;r++){ const name=clean(rows[r][NAME_COL]); if(name==="")continue;
+function parseSheet(rows, notes){
+  notes = notes || {};
+  /* Structure du tableur :
+     Ligne 1 = thème. S'applique à toutes les colonnes en dessous jusqu'au thème suivant.
+     Ligne 2 = problématique. Idem : peut couvrir PLUSIEURS colonnes (fusion) ; chaque
+               colonne couverte est un « emplacement de mesure » de cette problématique.
+     Ligne 3+ = UNE ligne par candidat (col A = nom, col B = parti). Chaque cellule non
+               vide = une mesure ; la note/commentaire de la cellule = précisions. */
+  const themeRow=rows[0]||[], probRow=rows[1]||[];
+  // largeur utile = dernière colonne portant un contenu quelque part
+  let maxCol=0; rows.forEach(r=>{ (r||[]).forEach((v,c)=>{ if(clean(v)!=="") maxCol=Math.max(maxCol,c+1); }); });
+  // propagation vers la droite des thèmes et problématiques (les fusions laissent des vides)
+  const problems=[]; let curTheme="", curProb=null;
+  for(let c=FIRST;c<maxCol;c++){
+    if(clean(themeRow[c])!==""){ curTheme=clean(themeRow[c]); curProb=null; }  // nouveau thème → fin de la problématique courante
+    if(clean(probRow[c])!==""){
+      curProb={id:"p"+problems.length, cols:[], theme:curTheme||"Sans thème", label:clean(probRow[c])};
+      problems.push(curProb);
+    }
+    if(curProb) curProb.cols.push(c);
+  }
+  // candidats : une ligne chacun, à partir de la ligne 3
+  const noteAt=(r,c)=> (notes[r] && notes[r][c]) ? clean(notes[r][c]) : "";
+  const candidates=[],propos={};
+  for(let r=2;r<rows.length;r++){
+    const name=clean(rows[r][NAME_COL]); if(name==="") continue;
     const id="c"+candidates.length; candidates.push({id,name,party:clean(rows[r][PARTY_COL])});
-    propos[id]={}; precisions[id]={};
-    const nextRow=rows[r+1]; const hasPrec = nextRow && clean(nextRow[NAME_COL])==="";  // 2e ligne (nom vide) = précisions
-    problems.forEach(p=>{ propos[id][p.id]=clean(rows[r][p.col]); precisions[id][p.id]= hasPrec?clean(nextRow[p.col]):""; }); }
-  // priorité calculée à partir du nombre de partis qui se prononcent
+    propos[id]={};
+    problems.forEach(p=>{
+      const ms=[];
+      p.cols.forEach(c=>{ const txt=clean(rows[r][c]); if(txt) ms.push({text:txt, precision:noteAt(r,c)}); });
+      propos[id][p.id]=ms;
+    });
+  }
+  // priorité automatique : part des partis qui proposent ≥1 mesure sur la problématique
   const partyKey = cd => clean(cd.party) || cd.name;
   const totalParties = new Set(candidates.map(partyKey)).size || 1;
   problems.forEach(p=>{
     const set=new Set();
-    candidates.forEach(cd=>{ if(propos[cd.id][p.id]) set.add(partyKey(cd)); });
+    candidates.forEach(cd=>{ if(propos[cd.id][p.id].length>0) set.add(partyKey(cd)); });
     p.coverage = set.size/totalParties;
     p.parties  = set.size;
     p.priority = priorityFromCoverage(p.coverage);
   });
   const themes=[]; problems.forEach(p=>{if(!themes.includes(p.theme))themes.push(p.theme);});
   const priorities=[...new Set(problems.map(p=>p.priority))].sort((a,b)=>a-b);
-  return {problems,candidates,propos,precisions,themes,priorities,totalParties,firstRow:firstCand+1};
+  return {problems,candidates,propos,themes,priorities,totalParties};
 }
 const partyOf = (name, fallback) => candCfg(name).parti || fallback || "";
 const colorOf = name => candCfg(name).couleur || "#1B2A6B";
@@ -376,15 +392,16 @@ const normProp = t => clean(t).toLowerCase().replace(/\s+/g," ");
 function shuffle(arr,seed){const a=[...arr];let s=seed||1;const r=()=>{s=(s*9301+49297)%233280;return s/233280;};
   for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function buildQuestions(model,{candidateIds,priorities,themes}){
-  const incl=new Set(candidateIds); const qs=[]; const prec=model.precisions||{};
+  const incl=new Set(candidateIds); const qs=[];
   model.problems.forEach((p,idx)=>{
     if(priorities&&!priorities.has(p.priority))return;
     if(themes&&!themes.has(p.theme))return;
     const g=new Map();
-    model.candidates.forEach(c=>{ if(!incl.has(c.id))return; const txt=model.propos[c.id][p.id]; if(!txt)return;
-      const k=normProp(txt); if(!g.has(k))g.set(k,{id:"o"+g.size,text:txt,candidateIds:[],precs:[]});
-      const grp=g.get(k); grp.candidateIds.push(c.id);
-      const pr=(prec[c.id]||{})[p.id]; if(pr) grp.precs.push(pr); });
+    model.candidates.forEach(c=>{ if(!incl.has(c.id))return;
+      (model.propos[c.id][p.id]||[]).forEach(mz=>{ const txt=mz.text; if(!txt)return;
+        const k=normProp(txt); if(!g.has(k))g.set(k,{id:"o"+g.size,text:txt,candidateIds:[],precs:[]});
+        const grp=g.get(k); if(!grp.candidateIds.includes(c.id)) grp.candidateIds.push(c.id);
+        if(mz.precision) grp.precs.push(mz.precision); }); });
     if(g.size===0)return;
     const options=[...g.values()].map(o=>{ const uniq=[...new Set(o.precs.map(x=>clean(x)).filter(Boolean))];
       return {id:o.id,text:o.text,candidateIds:o.candidateIds,precision:uniq.join("\n")}; });
@@ -393,13 +410,18 @@ function buildQuestions(model,{candidateIds,priorities,themes}){
   return qs;
 }
 
-/* Comptage : renvoie une liste classée (avec rang + égalités) sur un sous-ensemble de paires {q,a}. */
+/* Comptage : renvoie une liste classée (avec rang + égalités) sur un sous-ensemble de paires {q,a}.
+   Un candidat est crédité d'AU PLUS +1 par question, même si plusieurs de ses mesures sont retenues. */
 function tally(pairs, candidateIds, model){
   const pts={}; candidateIds.forEach(id=>pts[id]=0); let answered=0;
   pairs.forEach(({q,a})=>{
     if(!a||a.type==="ignore")return; answered++;
     if(a.type==="none"){candidateIds.forEach(id=>pts[id]-=1);return;}
-    if(a.type==="pick"){a.optIds.forEach(oid=>{const o=q.options.find(o=>o.id===oid); if(o)o.candidateIds.forEach(c=>{if(c in pts)pts[c]+=1;});});}
+    if(a.type==="pick"){
+      const credited=new Set();
+      a.optIds.forEach(oid=>{const o=q.options.find(o=>o.id===oid); if(o)o.candidateIds.forEach(c=>credited.add(c));});
+      credited.forEach(c=>{if(c in pts)pts[c]+=1;});
+    }
   });
   const byId=Object.fromEntries(model.candidates.map(c=>[c.id,c]));
   let list=candidateIds.map(id=>{const kept=Math.max(0,pts[id]); return {...byId[id],kept,denom:answered,pct:answered>0?kept/answered*100:0};});
@@ -488,7 +510,7 @@ function CardPhoto({name}){
 }
 function HatchLegend({names}){
   if(!names || !names.some(isHatched)) return null;
-  return <div className="hatch-legend"><span className="hatch-swatch"/>dernier programme national publié</div>;
+  return <div className="hatch-legend"><span className="hatch-swatch"/>programme indisponible</div>;
 }
 
 /* ═══════════════ Accueil ═══════════════ */
@@ -612,7 +634,9 @@ function Contact(){
 
 /* ═══════════════ Comparateur avancé (config) ═══════════════ */
 function AdvancedConfig({model,onStart}){
-  const [cands,setCands]=useState(()=>new Set(model.candidates.map(c=>c.id)));
+  // Les candidats « hachurés » (programme indisponible) sont exclus des tests.
+  const avail=useMemo(()=>model.candidates.filter(c=>!isHatched(c.name)),[model]);
+  const [cands,setCands]=useState(()=>new Set(avail.map(c=>c.id)));
   const [themes,setThemes]=useState(()=>new Set(model.themes));
   const [degre,setDegre]=useState(5);
   const toggle=(set,setter,v)=>{const n=new Set(set);n.has(v)?n.delete(v):n.add(v);setter(n);};
@@ -632,8 +656,8 @@ function AdvancedConfig({model,onStart}){
       <div className="config-grid">
         <div className="config-card">
           <h4>Listes comparées</h4>
-          <div className="tools"><button className="btn-quiet" onClick={()=>all(model.candidates.map(c=>c.id),setCands)}>Tout</button><button className="btn-quiet" onClick={()=>none(setCands)}>Aucun</button></div>
-          {model.candidates.map(c=><label className="chk" key={c.id}><input type="checkbox" checked={cands.has(c.id)} onChange={()=>toggle(cands,setCands,c.id)}/>{c.name}</label>)}
+          <div className="tools"><button className="btn-quiet" onClick={()=>all(avail.map(c=>c.id),setCands)}>Tout</button><button className="btn-quiet" onClick={()=>none(setCands)}>Aucun</button></div>
+          {avail.map(c=><label className="chk" key={c.id}><input type="checkbox" checked={cands.has(c.id)} onChange={()=>toggle(cands,setCands,c.id)}/>{c.name}</label>)}
         </div>
         <div className="config-card">
           <h4>Thèmes</h4>
@@ -893,8 +917,9 @@ function Quiz({model,config,title,onExit,neutral}){
                       if(a.type==="none")return <div className="muted" style={{fontSize:14}}>Aucune proposition retenue — pénalité appliquée à toutes les listes.</div>;
                       const opts=q.options.filter(o=>a.optIds.includes(o.id));
                       return opts.map(opt=>(
-                        <div className="kept" key={opt.id}>{opt.text}
-                          <div className="cred">{opt.candidateIds.map(cid=>byId[cid]).filter(Boolean).map(c=>(
+                        <div className="kept" key={opt.id} style={opt.candidateIds.length===1?cardStyle(byId[opt.candidateIds[0]].name):null}>
+                          <div className="kept-text">{opt.text}{opt.precision && <div className="kept-prec">{opt.precision}</div>}</div>
+                          <div className="kept-cred">{opt.candidateIds.map(cid=>byId[cid]).filter(Boolean).map(c=>(
                             <span className="chip" key={c.id}><Avatar name={c.name} size={22}/><b>{c.name}</b></span>))}</div>
                         </div>));
                     })()}
@@ -986,7 +1011,7 @@ function Quiz({model,config,title,onExit,neutral}){
 
 function Simple({model,onExit}){
   const config=useMemo(()=>{
-    const ids=TEST_CANDS.map(n=>model.candidates.find(c=>c.name.toLowerCase()===String(n).toLowerCase())).filter(Boolean).map(c=>c.id);
+    const ids=TEST_CANDS.map(n=>model.candidates.find(c=>c.name.toLowerCase()===String(n).toLowerCase())).filter(Boolean).filter(c=>!isHatched(c.name)).map(c=>c.id);
     return {candidateIds:ids,priorities:new Set([TEST_PRIO]),themes:null};
   },[model]);
   if(config.candidateIds.length===0)
@@ -1024,14 +1049,22 @@ function DataModal({onClose}){
 function App(){
   const [view,setView]=useState("home");
   const [rows,setRows]=useState(null);     // null = chargement ; [] = échec
+  const [notes,setNotes]=useState({});
   const [showData,setShowData]=useState(false);
-  const model=useMemo(()=> Array.isArray(rows)&&rows.length ? parseSheet(rows) : null,[rows]);
+  const model=useMemo(()=> Array.isArray(rows)&&rows.length ? parseSheet(rows,notes) : null,[rows,notes]);
   const dataState = rows===null ? "loading" : (model ? "ready" : "error");
 
   useEffect(()=>{ fetch("./Comparaison_programmes.xlsx?t="+Date.now(),{cache:"no-store"})
     .then(r=>{if(!r.ok)throw 0;return r.arrayBuffer();})
-    .then(buf=>{const wb=XLSX.read(buf,{type:"array"});const ws=wb.Sheets[wb.SheetNames[0]];
-      const r=XLSX.utils.sheet_to_json(ws,{header:1,defval:""}); setRows(r.length?r:[]);})
+    .then(buf=>{const wb=XLSX.read(buf,{type:"array",cellComments:true});const ws=wb.Sheets[wb.SheetNames[0]];
+      const r=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+      const nt={};   // notes de cellule = précisions {ligne:{col:texte}}
+      try{ if(ws["!ref"]){ const rng=XLSX.utils.decode_range(ws["!ref"]);
+        for(let R=rng.s.r;R<=rng.e.r;R++) for(let C=rng.s.c;C<=rng.e.c;C++){
+          const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];
+          if(cell&&cell.c&&cell.c.length){ const t=cell.c.map(x=>x&&x.t).filter(Boolean).join(" ").trim(); if(t)(nt[R]=nt[R]||{})[C]=t; }
+        } } }catch(_){}
+      setNotes(nt); setRows(r.length?r:[]);})
     .catch(()=>setRows([])); },[]);
 
   const go=v=>{setView(v);window.scrollTo({top:0,behavior:"smooth"});};
@@ -1045,7 +1078,7 @@ function App(){
       Le tableur chargé ne contient aucune mesure exploitable.<br/>
       <span className="muted">Diagnostic du fichier chargé : <b>{model.candidates.length}</b> candidat(s), <b>{model.problems.length}</b> problématique(s).</span><br/>
       <span className="muted">{model.candidates.length>0
-        ? "Les candidats sont lus, mais la ligne des libellés (juste au-dessus du premier candidat) est vide. Vérifie qu'elle contient bien un intitulé par colonne, puis re-déploie le .xlsx à jour et recharge (Ctrl+F5)."
+        ? "Les candidats sont lus, mais la ligne 2 (problématiques) semble vide. Vérifie qu'elle contient bien un intitulé par problématique, puis re-déploie le .xlsx à jour et recharge (Ctrl+F5)."
         : "Aucun candidat détecté : le fichier en ligne est peut-être l'ancienne version. Re-exporte ton tableur, remplace Comparaison_programmes.xlsx sur GitHub, puis recharge (Ctrl+F5)."}</span><br/>
       <button className="btn btn-ghost mt" onClick={()=>go("home")}>Retour</button></div></div>;
     return node;
